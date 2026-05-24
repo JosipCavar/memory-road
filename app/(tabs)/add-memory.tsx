@@ -32,8 +32,7 @@ export default function AddMemoryScreen() {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false,
       quality: 0.7,
     });
 
@@ -51,8 +50,7 @@ export default function AddMemoryScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false,
       quality: 0.7,
     });
 
@@ -86,7 +84,6 @@ export default function AddMemoryScreen() {
     setLoading(true);
 
     try {
-      // Dohvati lokaciju
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Greška', 'Potrebna je dozvola za lokaciju');
@@ -97,14 +94,11 @@ export default function AddMemoryScreen() {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
 
-      // Dohvati korisnika
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Nisi prijavljen');
 
-      // Upload slike
       const imageUrl = await uploadImage(image, session.user.id);
 
-      // Spremi u Firestore
       await addDoc(collection(db, 'memories'), {
         title,
         description,
@@ -133,7 +127,7 @@ export default function AddMemoryScreen() {
 
       <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
         {image ? (
-          <Image source={{ uri: image }} style={styles.image} />
+          <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
         ) : (
           <View style={styles.imagePlaceholder}>
             <Text style={styles.imagePlaceholderText}>📷 Fotografiraj</Text>
@@ -183,7 +177,7 @@ const styles = StyleSheet.create({
   content: { padding: 24 },
   title: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 24, marginTop: 48 },
   imageButton: { marginBottom: 12 },
-  image: { width: '100%', height: 200, borderRadius: 12 },
+  image: { width: '100%', height: 250, borderRadius: 12 },
   imagePlaceholder: {
     width: '100%',
     height: 200,

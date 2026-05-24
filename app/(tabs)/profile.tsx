@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,11 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
+import { router } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 
 interface UserProfile {
   username: string;
@@ -25,9 +27,11 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [memoriesCount, setMemoriesCount] = useState(0);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [])
+  );
 
   const loadProfile = async () => {
     try {
@@ -39,8 +43,6 @@ export default function ProfileScreen() {
         setProfile(userDoc.data() as UserProfile);
       }
 
-      // Dohvati broj uspomena
-      const { collection, query, where, getCountFromServer } = await import('firebase/firestore');
       const q = query(
         collection(db, 'memories'),
         where('userId', '==', session.user.id)
@@ -71,6 +73,7 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           await supabase.auth.signOut();
+          router.replace('/(auth)/login');
         },
       },
     ]);
