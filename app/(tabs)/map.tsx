@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
+import { useTheme } from '../../lib/ThemeContext';
 
 interface Memory {
   id: string;
@@ -21,6 +22,20 @@ interface MemoryGroup {
   longitude: number;
   memories: Memory[];
 }
+
+const darkMapStyle = [
+  { elementType: 'geometry', stylers: [{ color: '#212121' }] },
+  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#373737' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3c3c3c' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#000000' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#3d3d3d' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#2c2c2c' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
+  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#757575' }] },
+];
 
 function groupMemories(memories: Memory[]): MemoryGroup[] {
   const groups: MemoryGroup[] = [];
@@ -49,6 +64,7 @@ export default function MapScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<MemoryGroup | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { isDark, colors } = useTheme();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -95,8 +111,8 @@ export default function MapScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -104,9 +120,10 @@ export default function MapScreen() {
   const currentMemory = selectedGroup?.memories[currentIndex];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <MapView
         style={styles.map}
+        customMapStyle={isDark ? darkMapStyle : []}
         initialRegion={{
           latitude: 44.0,
           longitude: 17.5,
@@ -124,16 +141,14 @@ export default function MapScreen() {
             }}
             onPress={() => handleMarkerPress(group)}
             pinColor="#4CAF50"
-          >
-          </Marker>
+          />
         ))}
       </MapView>
 
       {selectedGroup && currentMemory && (
-        <View style={styles.popup}>
+        <View style={[styles.popup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Image source={{ uri: currentMemory.imageUrl }} style={styles.popupImage} />
-          
-          {/* Indikator stranica */}
+
           {selectedGroup.memories.length > 1 && (
             <View style={styles.indicator}>
               {selectedGroup.memories.map((_, i) => (
@@ -149,13 +164,12 @@ export default function MapScreen() {
           )}
 
           <View style={styles.popupContent}>
-            <Text style={styles.popupTitle}>{currentMemory.title}</Text>
-            <Text style={styles.popupDate}>
+            <Text style={[styles.popupTitle, { color: colors.text }]}>{currentMemory.title}</Text>
+            <Text style={[styles.popupDate, { color: colors.subtext }]}>
               {new Date(currentMemory.createdAt).toLocaleDateString('hr-HR')}
             </Text>
 
             <View style={styles.popupButtons}>
-              {/* Navigacija lijevo/desno */}
               {selectedGroup.memories.length > 1 && (
                 <View style={styles.navButtons}>
                   <TouchableOpacity
@@ -165,7 +179,7 @@ export default function MapScreen() {
                   >
                     <Text style={styles.navButtonText}>←</Text>
                   </TouchableOpacity>
-                  <Text style={styles.navCount}>
+                  <Text style={[styles.navCount, { color: colors.subtext }]}>
                     {currentIndex + 1} / {selectedGroup.memories.length}
                   </Text>
                   <TouchableOpacity
@@ -180,7 +194,7 @@ export default function MapScreen() {
 
               <View style={styles.actionButtons}>
                 <TouchableOpacity
-                  style={styles.openButton}
+                  style={[styles.openButton, { backgroundColor: colors.primary }]}
                   onPress={() => {
                     setSelectedGroup(null);
                     router.push(`/memory/${currentMemory.id}`);
@@ -192,7 +206,7 @@ export default function MapScreen() {
                   style={styles.closeButton}
                   onPress={() => setSelectedGroup(null)}
                 >
-                  <Text style={styles.closeButtonText}>✕</Text>
+                  <Text style={[styles.closeButtonText, { color: colors.subtext }]}>✕</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -206,17 +220,15 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f0f0f' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   popup: {
     position: 'absolute',
     bottom: 24,
     left: 16,
     right: 16,
-    backgroundColor: '#1a1a1a',
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#333',
     elevation: 8,
   },
   popupImage: {
@@ -239,8 +251,8 @@ const styles = StyleSheet.create({
   popupContent: {
     padding: 16,
   },
-  popupTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
-  popupDate: { color: '#888', fontSize: 13, marginBottom: 12 },
+  popupTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
+  popupDate: { fontSize: 13, marginBottom: 12 },
   popupButtons: { gap: 8 },
   navButtons: {
     flexDirection: 'row',
@@ -256,19 +268,18 @@ const styles = StyleSheet.create({
   },
   navButtonDisabled: { opacity: 0.3 },
   navButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  navCount: { color: '#888', marginHorizontal: 16, fontSize: 14 },
+  navCount: { marginHorizontal: 16, fontSize: 14 },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   openButton: {
-    backgroundColor: '#4CAF50',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   openButtonText: { color: '#fff', fontWeight: 'bold' },
   closeButton: { padding: 10 },
-  closeButtonText: { color: '#888', fontSize: 18 },
+  closeButtonText: { fontSize: 18 },
 });

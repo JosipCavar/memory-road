@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { View, ActivityIndicator } from 'react-native';
+import { ThemeProvider } from '../lib/ThemeContext';
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -30,14 +31,17 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {session ? (
-        <Stack.Screen name="(tabs)" />
-      ) : (
-        <Stack.Screen name="(auth)" />
-      )}
-      <Stack.Screen name="memory/[id]" />
-      <Stack.Screen name="share/[userId]" />
-    </Stack>
+    <ThemeProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        {session ? (
+          <Stack.Screen name="(tabs)" />
+        ) : (
+          <Stack.Screen name="(auth)" />
+        )}
+        <Stack.Screen name="memory/[id]" />
+        <Stack.Screen name="share/[userId]" />
+        <Stack.Screen name="memories-list" />
+      </Stack>
+    </ThemeProvider>
   );
 }

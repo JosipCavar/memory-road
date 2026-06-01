@@ -12,10 +12,12 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
+import { useTheme } from '../../lib/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -35,10 +37,13 @@ export default function MemoryScreen() {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageFullscreen, setImageFullscreen] = useState(false);
+  const { colors } = useTheme();
 
-  useEffect(() => {
+  useFocusEffect(
+  useCallback(() => {
     loadMemory();
-  }, [id]);
+  }, [id])
+);
 
   const loadMemory = async () => {
     try {
@@ -74,16 +79,16 @@ export default function MemoryScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (!memory) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Uspomena nije pronađena</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: colors.text }]}>Uspomena nije pronađena</Text>
       </View>
     );
   }
@@ -91,7 +96,7 @@ export default function MemoryScreen() {
   return (
     <>
       <StatusBar hidden={imageFullscreen} />
-      <ScrollView style={styles.container}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
         <TouchableOpacity onPress={() => setImageFullscreen(true)}>
           <Image source={{ uri: memory.imageUrl }} style={styles.image} resizeMode="cover" />
           <View style={styles.zoomHint}>
@@ -104,10 +109,10 @@ export default function MemoryScreen() {
         </TouchableOpacity>
 
         <View style={styles.content}>
-          <Text style={styles.title}>{memory.title}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{memory.title}</Text>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoText}>
+          <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.infoText, { color: colors.subtext }]}>
               📅 {new Date(memory.createdAt).toLocaleDateString('hr-HR', {
                 day: 'numeric',
                 month: 'long',
@@ -116,18 +121,25 @@ export default function MemoryScreen() {
             </Text>
           </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoText}>
+          <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.infoText, { color: colors.subtext }]}>
               📍 {memory.latitude.toFixed(4)}, {memory.longitude.toFixed(4)}
             </Text>
           </View>
 
           {memory.description ? (
-            <View style={styles.descriptionCard}>
-              <Text style={styles.descriptionLabel}>Opis</Text>
-              <Text style={styles.description}>{memory.description}</Text>
+            <View style={[styles.descriptionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.descriptionLabel, { color: colors.primary }]}>Opis</Text>
+              <Text style={[styles.description, { color: colors.text }]}>{memory.description}</Text>
             </View>
           ) : null}
+
+          <TouchableOpacity
+            style={[styles.editButton, { backgroundColor: colors.card, borderColor: colors.primary }]}
+            onPress={() => router.push(`/memory/edit/${memory.id}`)}
+          >
+            <Text style={[styles.editButtonText, { color: colors.primary }]}>✏️ Uredi uspomenu</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
             <Text style={styles.deleteButtonText}>🗑️ Obriši uspomenu</Text>
@@ -161,9 +173,9 @@ export default function MemoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f0f' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f0f0f' },
-  errorText: { color: '#fff', fontSize: 16 },
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { fontSize: 16 },
   image: { width: '100%', height: 300 },
   zoomHint: {
     position: 'absolute',
@@ -186,27 +198,32 @@ const styles = StyleSheet.create({
   },
   backButtonText: { color: '#fff', fontSize: 16 },
   content: { padding: 24 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#fff', marginBottom: 16 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 16 },
   infoRow: {
-    backgroundColor: '#1a1a1a',
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#333',
   },
-  infoText: { color: '#888', fontSize: 14 },
+  infoText: { fontSize: 14 },
   descriptionCard: {
-    backgroundColor: '#1a1a1a',
     padding: 16,
     borderRadius: 12,
     marginTop: 8,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#333',
   },
-  descriptionLabel: { color: '#4CAF50', fontSize: 12, marginBottom: 8, fontWeight: 'bold' },
-  description: { color: '#fff', fontSize: 16, lineHeight: 24 },
+  descriptionLabel: { fontSize: 12, marginBottom: 8, fontWeight: 'bold' },
+  description: { fontSize: 16, lineHeight: 24 },
+  editButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  editButtonText: { fontSize: 16, fontWeight: 'bold' },
   deleteButton: {
     backgroundColor: '#1a1a1a',
     padding: 16,

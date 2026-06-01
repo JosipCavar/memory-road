@@ -13,12 +13,14 @@ import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { db } from '../../lib/firestore';
 import { doc, setDoc } from 'firebase/firestore';
+import { useTheme } from '../../lib/ThemeContext';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
+  const { colors } = useTheme();
 
   const handleRegister = async () => {
     if (!email || !password || !username) {
@@ -36,7 +38,6 @@ export default function RegisterScreen() {
     }
 
     if (data.user) {
-      // Spremi korisnika u Firestore
       await setDoc(doc(db, 'users', data.user.id), {
         username,
         email,
@@ -52,41 +53,41 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-        <Text style={styles.title}>🗺️ Memory Road</Text>
-        <Text style={styles.subtitle}>Kreiraj račun</Text>
+        <Text style={[styles.title, { color: colors.text }]}>🗺️ Memory Road</Text>
+        <Text style={[styles.subtitle, { color: colors.subtext }]}>Kreiraj račun</Text>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
           placeholder="Korisničko ime"
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.subtext}
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
           placeholder="Email"
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.subtext}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
           placeholder="Lozinka"
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.subtext}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.primary }]}
           onPress={handleRegister}
           disabled={loading}
         >
@@ -96,7 +97,9 @@ export default function RegisterScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-          <Text style={styles.link}>Već imaš račun? Prijavi se</Text>
+          <Text style={[styles.link, { color: colors.primary }]}>
+            Već imaš račun? Prijavi se
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -104,22 +107,18 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f0f' },
+  container: { flex: 1 },
   inner: { flex: 1, justifyContent: 'center', padding: 24 },
-  title: { fontSize: 36, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 18, color: '#888', textAlign: 'center', marginBottom: 32 },
+  title: { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 18, textAlign: 'center', marginBottom: 32 },
   input: {
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#333',
   },
   button: {
-    backgroundColor: '#4CAF50',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -127,5 +126,5 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  link: { color: '#4CAF50', textAlign: 'center', fontSize: 14 },
+  link: { textAlign: 'center', fontSize: 14 },
 });

@@ -16,12 +16,14 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
+import { useTheme } from '../../lib/ThemeContext';
 
 export default function AddMemoryScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { colors } = useTheme();
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -122,35 +124,41 @@ export default function AddMemoryScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Nova uspomena</Text>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.content}
+    >
+      <Text style={[styles.title, { color: colors.text }]}>Nova uspomena</Text>
 
       <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
         {image ? (
           <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
         ) : (
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imagePlaceholderText}>📷 Fotografiraj</Text>
+          <View style={[styles.imagePlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.imagePlaceholderText, { color: colors.subtext }]}>📷 Fotografiraj</Text>
           </View>
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.galleryButton} onPress={pickFromGallery}>
-        <Text style={styles.galleryButtonText}>🖼️ Odaberi iz galerije</Text>
+      <TouchableOpacity
+        style={[styles.galleryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={pickFromGallery}
+      >
+        <Text style={[styles.galleryButtonText, { color: colors.subtext }]}>🖼️ Odaberi iz galerije</Text>
       </TouchableOpacity>
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
         placeholder="Naslov uspomene"
-        placeholderTextColor="#888"
+        placeholderTextColor={colors.subtext}
         value={title}
         onChangeText={setTitle}
       />
 
       <TextInput
-        style={[styles.input, styles.textArea]}
+        style={[styles.input, styles.textArea, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
         placeholder="Opis (opcionalno)"
-        placeholderTextColor="#888"
+        placeholderTextColor={colors.subtext}
         value={description}
         onChangeText={setDescription}
         multiline
@@ -158,7 +166,7 @@ export default function AddMemoryScreen() {
       />
 
       <TouchableOpacity
-        style={styles.saveButton}
+        style={[styles.saveButton, { backgroundColor: colors.primary }]}
         onPress={handleSave}
         disabled={loading}
       >
@@ -173,46 +181,38 @@ export default function AddMemoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f0f' },
+  container: { flex: 1 },
   content: { padding: 24 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 24, marginTop: 48 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 24, marginTop: 48 },
   imageButton: { marginBottom: 12 },
   image: { width: '100%', height: 250, borderRadius: 12 },
   imagePlaceholder: {
     width: '100%',
     height: 200,
-    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#333',
     borderStyle: 'dashed',
   },
-  imagePlaceholderText: { color: '#888', fontSize: 18 },
+  imagePlaceholderText: { fontSize: 18 },
   galleryButton: {
-    backgroundColor: '#1a1a1a',
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#333',
   },
-  galleryButtonText: { color: '#888', fontSize: 14 },
+  galleryButtonText: { fontSize: 14 },
   input: {
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#333',
   },
   textArea: { height: 100, textAlignVertical: 'top' },
   saveButton: {
-    backgroundColor: '#4CAF50',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
