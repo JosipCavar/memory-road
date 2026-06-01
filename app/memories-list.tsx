@@ -31,7 +31,7 @@ interface MemoryGroup {
   data: Memory[];
 }
 
-const FILTERS = ['Sve', 'Ovaj mjesec', 'Ove godine'];
+const FILTERS = ['Sve', 'Favoriti', 'Ovaj mjesec', 'Ove godine'];
 
 function groupByMonth(memories: Memory[]): MemoryGroup[] {
   const groups: { [key: string]: Memory[] } = {};
@@ -83,6 +83,9 @@ export default function MemoriesListScreen() {
         m.title.toLowerCase().includes(searchText.toLowerCase())
       );
     }
+    if (filter === 'Favoriti') {
+  result = result.filter((m: any) => m.isFavorite === true);
+}
 
     setFiltered(result);
   };

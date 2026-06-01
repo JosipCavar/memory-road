@@ -20,6 +20,7 @@ import { useTheme } from '../../lib/ThemeContext';
 import QRCode from 'react-native-qrcode-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { getLocationName } from '../../lib/geocoding';
+import { ACHIEVEMENTS, getUnlockedAchievements, AchievementStats } from '../../lib/achievements';
 
 interface UserProfile {
   username: string;
@@ -47,6 +48,7 @@ export default function ProfileScreen() {
   const [memoriesCount, setMemoriesCount] = useState(0);
   const [totalKm, setTotalKm] = useState(0);
   const [countries, setCountries] = useState<string[]>([]);
+  const [achievementStats, setAchievementStats] = useState<AchievementStats | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { isDark, toggleTheme, colors } = useTheme();
@@ -98,8 +100,17 @@ export default function ProfileScreen() {
       const countryNames = await Promise.all(
         memoriesData.map(m => getLocationName(m.latitude, m.longitude))
       );
-      const uniqueCountries = [...new Set(countryNames.filter(c => c !== 'Nepoznata država'))];
+      const uniqueCountries = [...new Set(countryNames.filter(c => c !== 'Nepoznata država' && c !== 'Nepoznata lokacija' && c !== ''))];
       setCountries(uniqueCountries);
+
+      // Achievement stats
+      const favoritesCount = memoriesData.filter(m => m.isFavorite === true).length;
+      setAchievementStats({
+        memoriesCount: memoriesData.length,
+        favoritesCount,
+        totalKm: Math.round(km),
+        countriesCount: uniqueCountries.length,
+      });
 
     } catch (error: any) {
       Alert.alert('Greška', error.message);
@@ -183,6 +194,7 @@ export default function ProfileScreen() {
   }
 
   const shareUrl = `memory-road://share/${profile?.shareToken}`;
+  const unlockedCount = achievementStats ? getUnlockedAchievements(achievementStats).length : 0;
 
   return (
     <>
@@ -264,6 +276,17 @@ export default function ProfileScreen() {
             </View>
           </View>
         )}
+
+        {/* Achievements gumb */}
+        <TouchableOpacity
+          style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/achievements')}
+        >
+          <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
+            🏆 Dostignuća ({unlockedCount}/{ACHIEVEMENTS.length})
+          </Text>
+          <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
+        </TouchableOpacity>
 
         {/* Dark/Light mode */}
         <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -441,6 +464,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   countryText: { fontSize: 14, fontWeight: 'bold' },
+  achievementsButton: {
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  achievementsButtonText: { fontSize: 16, fontWeight: 'bold' },
+  achievementsArrow: { fontSize: 16 },
   themeCard: {
     borderRadius: 16,
     padding: 16,

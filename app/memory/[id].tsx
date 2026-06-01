@@ -14,7 +14,7 @@ import {
   FlatList,
 } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
-import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/ThemeContext';
@@ -31,6 +31,7 @@ interface Memory {
   imageUrls?: string[];
   createdAt: string;
   userId: string;
+  isFavorite?: boolean;
 }
 
 export default function MemoryScreen() {
@@ -57,6 +58,17 @@ export default function MemoryScreen() {
       Alert.alert('Greška', error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (!memory) return;
+    try {
+      const newValue = !memory.isFavorite;
+      await updateDoc(doc(db, 'memories', id), { isFavorite: newValue });
+      setMemory({ ...memory, isFavorite: newValue });
+    } catch (error: any) {
+      Alert.alert('Greška', error.message);
     }
   };
 
@@ -94,7 +106,6 @@ export default function MemoryScreen() {
     );
   }
 
-  // Kompatibilnost sa starim i novim formatom
   const allImages = memory.imageUrls ?? [memory.imageUrl];
 
   return (
@@ -102,7 +113,6 @@ export default function MemoryScreen() {
       <StatusBar hidden={!!fullscreenImage} />
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
 
-        {/* Horizontalni scroll slika */}
         <FlatList
           horizontal
           data={allImages}
@@ -119,7 +129,6 @@ export default function MemoryScreen() {
           )}
         />
 
-        {/* Indikator slika */}
         {allImages.length > 1 && (
           <View style={styles.indicator}>
             {allImages.map((_, i) => (
@@ -135,8 +144,20 @@ export default function MemoryScreen() {
           <Text style={styles.backButtonText}>← Nazad</Text>
         </TouchableOpacity>
 
+        {/* Favorite gumb */}
+        <TouchableOpacity style={styles.favoriteButton} onPress={toggleFavorite}>
+          <Text style={styles.favoriteButtonText}>
+            {memory.isFavorite ? '❤️' : '🤍'}
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.content}>
-          <Text style={[styles.title, { color: colors.text }]}>{memory.title}</Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, { color: colors.text }]}>{memory.title}</Text>
+            {memory.isFavorite && (
+              <Text style={styles.favoriteBadge}>❤️ Favorit</Text>
+            )}
+          </View>
 
           <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.infoText, { color: colors.subtext }]}>
@@ -182,7 +203,6 @@ export default function MemoryScreen() {
         </View>
       </ScrollView>
 
-      {/* Fullscreen modal */}
       <Modal
         visible={!!fullscreenImage}
         transparent
@@ -246,8 +266,27 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   backButtonText: { color: '#fff', fontSize: 16 },
+  favoriteButton: {
+    position: 'absolute',
+    top: 48,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favoriteButtonText: { fontSize: 22 },
   content: { padding: 24 },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 16 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  title: { fontSize: 28, fontWeight: 'bold', flex: 1 },
+  favoriteBadge: { fontSize: 14, color: '#ff4444' },
   infoRow: {
     padding: 12,
     borderRadius: 8,

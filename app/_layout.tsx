@@ -39,8 +39,12 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
         )}
         <Stack.Screen name="memory/[id]" />
+        <Stack.Screen name="memory/edit/[id]" />
         <Stack.Screen name="share/[userId]" />
         <Stack.Screen name="memories-list" />
+        <Stack.Screen name="memoryoftheday" />
+        <Stack.Screen name="timeline" />
+        <Stack.Screen name="achievements" />
       </Stack>
     </ThemeProvider>
   );

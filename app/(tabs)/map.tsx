@@ -17,6 +17,7 @@ interface Memory {
   longitude: number;
   imageUrl: string;
   createdAt: string;
+  isFavorite?: boolean;
 }
 
 interface MemoryGroup {
@@ -102,7 +103,6 @@ export default function MapScreen() {
     if (!userId) return;
 
     if (!isOnline) {
-      // Offline — učitaj iz cachea
       getCachedMemories(userId).then((cached) => {
         setMemories(cached);
         setLoading(false);
@@ -110,7 +110,6 @@ export default function MapScreen() {
       return;
     }
 
-    // Online — dohvati iz Firestorea i cacheiraj
     const q = query(
       collection(db, 'memories'),
       where('userId', '==', userId)
@@ -153,7 +152,6 @@ export default function MapScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Offline banner */}
       {!isOnline && (
         <View style={styles.offlineBanner}>
           <Text style={styles.offlineBannerText}>📵 Offline mode — prikazuju se cackirani podaci</Text>
@@ -173,16 +171,32 @@ export default function MapScreen() {
       >
         {groups.map((group, index) => (
           <Marker
-            key={index}
+            key={`${index}-${group.memories.some(m => m.isFavorite)}`}
             coordinate={{
               latitude: group.latitude,
               longitude: group.longitude,
             }}
             onPress={() => showPopup(group)}
-            pinColor="#4CAF50"
+            pinColor={group.memories.some(m => m.isFavorite) ? '#ff4444' : '#4CAF50'}
           />
         ))}
       </MapView>
+
+      {/* Memory of the day gumb */}
+      <TouchableOpacity
+        style={styles.motdButton}
+        onPress={() => router.push('/memoryoftheday')}
+      >
+        <Text style={styles.motdButtonText}>📅</Text>
+      </TouchableOpacity>
+
+      {/* Timeline gumb */}
+      <TouchableOpacity
+        style={styles.timelineButton}
+        onPress={() => router.push('/timeline')}
+      >
+        <Text style={styles.timelineButtonText}>🗓️</Text>
+      </TouchableOpacity>
 
       {selectedGroup && currentMemory && (
         <Animated.View
@@ -209,7 +223,9 @@ export default function MapScreen() {
           )}
 
           <View style={styles.popupContent}>
-            <Text style={[styles.popupTitle, { color: colors.text }]}>{currentMemory.title}</Text>
+            <Text style={[styles.popupTitle, { color: colors.text }]}>
+              {currentMemory.isFavorite ? '❤️ ' : ''}{currentMemory.title}
+            </Text>
             <Text style={[styles.popupDate, { color: colors.subtext }]}>
               {new Date(currentMemory.createdAt).toLocaleDateString('hr-HR')}
             </Text>
@@ -272,6 +288,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   offlineBannerText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
+  motdButton: {
+    position: 'absolute',
+    top: 48,
+    left: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  motdButtonText: { fontSize: 22 },
+  timelineButton: {
+    position: 'absolute',
+    top: 48,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  timelineButtonText: { fontSize: 22 },
   popup: {
     position: 'absolute',
     bottom: 24,
