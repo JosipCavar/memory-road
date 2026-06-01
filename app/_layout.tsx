@@ -45,6 +45,9 @@ export default function RootLayout() {
         <Stack.Screen name="memoryoftheday" />
         <Stack.Screen name="timeline" />
         <Stack.Screen name="achievements" />
+        <Stack.Screen name="stats-chart" />
+        <Stack.Screen name="challenges" />
+        <Stack.Screen name="friends" />
       </Stack>
     </ThemeProvider>
   );

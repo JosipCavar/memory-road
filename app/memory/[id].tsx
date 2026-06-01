@@ -18,6 +18,7 @@ import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/ThemeContext';
+import { hapticSuccess, hapticLight, hapticWarning } from '../../lib/haptics';
 
 const { width, height } = Dimensions.get('window');
 
@@ -66,6 +67,7 @@ export default function MemoryScreen() {
     try {
       const newValue = !memory.isFavorite;
       await updateDoc(doc(db, 'memories', id), { isFavorite: newValue });
+      await hapticSuccess();
       setMemory({ ...memory, isFavorite: newValue });
     } catch (error: any) {
       Alert.alert('Greška', error.message);
@@ -80,8 +82,10 @@ export default function MemoryScreen() {
         style: 'destructive',
         onPress: async () => {
           try {
+            await hapticWarning();
             await deleteDoc(doc(db, 'memories', id));
             router.back();
+            
           } catch (error: any) {
             Alert.alert('Greška', error.message);
           }

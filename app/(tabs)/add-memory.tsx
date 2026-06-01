@@ -18,6 +18,7 @@ import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
 import { useTheme } from '../../lib/ThemeContext';
+import { hapticSuccess, hapticError } from '../../lib/haptics';
 
 export default function AddMemoryScreen() {
   const [title, setTitle] = useState('');
@@ -93,6 +94,7 @@ export default function AddMemoryScreen() {
   const handleSave = async () => {
     if (!title || images.length === 0) {
       Alert.alert('Greška', 'Naslov i barem jedna slika su obavezni');
+      await hapticError();
       return;
     }
 
@@ -129,6 +131,7 @@ export default function AddMemoryScreen() {
       });
 
       Alert.alert('Uspjeh!', 'Uspomena je spremljena!');
+      await hapticSuccess();
       setTitle('');
       setDescription('');
       setImages([]);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
   AchievementStats,
 } from '../lib/achievements';
 import { getLocationName } from '../lib/geocoding';
+import { Animated, Dimensions } from 'react-native';
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -32,9 +33,52 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
+const { width, height } = Dimensions.get('window');
+
+function ConfettiPiece({ index }: { index: number }) {
+  const y = useRef(new Animated.Value(-20)).current;
+  const x = useRef(new Animated.Value(Math.random() * width)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const colors = ['#4CAF50', '#ff4444', '#2196F3', '#FF9800', '#9C27B0', '#FFEB3B'];
+  const color = colors[index % colors.length];
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(y, {
+        toValue: height,
+        duration: 2000 + Math.random() * 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 2500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const size = 8 + Math.random() * 12;
+const isSquare = Math.random() > 0.5;
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        width: size,
+        height: size,
+        borderRadius: isSquare ? 2 : size / 2,
+        backgroundColor: color,
+        transform: [{ translateY: y }, { translateX: x }],
+        opacity,
+      }}
+    />
+  );
+}
+
 export default function AchievementsScreen() {
   const [stats, setStats] = useState<AchievementStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
   const { colors } = useTheme();
 
   useFocusEffect(
@@ -56,13 +100,9 @@ export default function AchievementsScreen() {
       const snapshot = await getDocs(q);
       const memories = snapshot.docs.map(d => d.data());
 
-      // Broj uspomena
       const memoriesCount = memories.length;
-
-      // Broj favorita
       const favoritesCount = memories.filter(m => m.isFavorite === true).length;
 
-      // Ukupni km
       let totalKm = 0;
       for (let i = 1; i < memories.length; i++) {
         totalKm += haversineDistance(
@@ -73,18 +113,25 @@ export default function AchievementsScreen() {
         );
       }
 
-      // Broj država
       const countryNames = await Promise.all(
         memories.map(m => getLocationName(m.latitude, m.longitude))
       );
-      const uniqueCountries = new Set(countryNames.filter(c => c !== 'Nepoznata država'));
+      const uniqueCountries = new Set(countryNames.filter(c => c !== 'Nepoznata država' && c !== 'Nepoznata lokacija' && c !== ''));
 
-      setStats({
+      const newStats: AchievementStats = {
         memoriesCount,
         favoritesCount,
         totalKm: Math.round(totalKm),
         countriesCount: uniqueCountries.size,
-      });
+      };
+
+      setStats(newStats);
+
+      const newUnlocked = getUnlockedAchievements(newStats).length;
+      if (newUnlocked > 0) {
+        setShowConfetti(true);
+      }
+
     } catch (error: any) {
       console.error(error);
     } finally {
@@ -164,6 +211,15 @@ export default function AchievementsScreen() {
           );
         }}
       />
+
+      {/* Konfeti */}
+      {showConfetti && (
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            {[...Array(50)].map((_, i) => (
+              <ConfettiPiece key={i} index={i} />
+            ))}
+          </View>
+        )}
     </View>
   );
 }

@@ -9,12 +9,15 @@ import {
   ActivityIndicator,
   TextInput,
   ScrollView,
+  Alert,
 } from 'react-native';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firestore';
 import { supabase } from '../lib/supabase';
 import { router } from 'expo-router';
 import { useTheme } from '../lib/ThemeContext';
+import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { MemoryCardSkeleton } from '../components/SkeletonLoader';
 
 interface Memory {
   id: string;
@@ -24,6 +27,7 @@ interface Memory {
   longitude: number;
   imageUrl: string;
   createdAt: string;
+  isFavorite?: boolean;
 }
 
 interface MemoryGroup {
@@ -50,6 +54,7 @@ export default function MemoriesListScreen() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [filtered, setFiltered] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('Sve');
   const { colors } = useTheme();
@@ -66,7 +71,9 @@ export default function MemoriesListScreen() {
     let result = [...memories];
     const now = new Date();
 
-    if (filter === 'Ovaj mjesec') {
+    if (filter === 'Favoriti') {
+      result = result.filter((m: any) => m.isFavorite === true);
+    } else if (filter === 'Ovaj mjesec') {
       result = result.filter((m) => {
         const d = new Date(m.createdAt);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
@@ -83,9 +90,6 @@ export default function MemoriesListScreen() {
         m.title.toLowerCase().includes(searchText.toLowerCase())
       );
     }
-    if (filter === 'Favoriti') {
-  result = result.filter((m: any) => m.isFavorite === true);
-}
 
     setFiltered(result);
   };
@@ -114,112 +118,159 @@ export default function MemoriesListScreen() {
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadMemories();
+    setRefreshing(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    Alert.alert('Obriši', 'Jesi li siguran?', [
+      { text: 'Odustani', style: 'cancel' },
+      {
+        text: 'Obriši',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteDoc(doc(db, 'memories', id));
+            setMemories(prev => prev.filter(m => m.id !== id));
+          } catch (error: any) {
+            Alert.alert('Greška', error.message);
+          }
+        },
+      },
+    ]);
+  };
+
   const groups = groupByMonth(filtered);
 
   if (loading) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backButton, { color: colors.primary }]}>← Nazad</Text>
-        </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Sve uspomene</Text>
-        <Text style={[styles.count, { color: colors.subtext }]}>{filtered.length} uspomena</Text>
-
-        {/* Search bar */}
-        <TextInput
-          style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
-          placeholder="🔍 Pretraži uspomene..."
-          placeholderTextColor={colors.subtext}
-          value={search}
-          onChangeText={setSearch}
-        />
-
-        {/* Filter gumbi */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filters}>
-          {FILTERS.map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterButton,
-                {
-                  backgroundColor: activeFilter === filter ? colors.primary : colors.card,
-                  borderColor: activeFilter === filter ? colors.primary : colors.border,
-                },
-              ]}
-              onPress={() => setActiveFilter(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  { color: activeFilter === filter ? '#fff' : colors.subtext },
-                ]}
-              >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
       </View>
+      <View style={{ padding: 16 }}>
+        <MemoryCardSkeleton />
+        <MemoryCardSkeleton />
+        <MemoryCardSkeleton />
+        <MemoryCardSkeleton />
+        <MemoryCardSkeleton />
+      </View>
+    </View>
+  );
+}
 
-      {/* Lista grupirana po mjesecima */}
-      <FlatList
-        data={groups}
-        keyExtractor={(item) => item.label}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={[styles.emptyText, { color: colors.subtext }]}>
-              {search ? 'Nema rezultata za pretragu' : 'Nemaš još uspomena'}
-            </Text>
-          </View>
-        }
-        renderItem={({ item: group }) => (
-          <View>
-            {/* Mjesec/godina header */}
-            <Text style={[styles.groupLabel, { color: colors.primary }]}>
-              📅 {group.label}
-            </Text>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={[styles.backButton, { color: colors.primary }]}>← Nazad</Text>
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>Sve uspomene</Text>
+          <Text style={[styles.count, { color: colors.subtext }]}>{filtered.length} uspomena</Text>
 
-            {group.data.map((memory) => (
+          <TextInput
+            style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+            placeholder="🔍 Pretraži uspomene..."
+            placeholderTextColor={colors.subtext}
+            value={search}
+            onChangeText={setSearch}
+          />
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filters}>
+            {FILTERS.map((filter) => (
               <TouchableOpacity
-                key={memory.id}
-                style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => router.push(`/memory/${memory.id}`)}
+                key={filter}
+                style={[
+                  styles.filterButton,
+                  {
+                    backgroundColor: activeFilter === filter ? colors.primary : colors.card,
+                    borderColor: activeFilter === filter ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => setActiveFilter(filter)}
               >
-                <Image source={{ uri: memory.imageUrl }} style={styles.cardImage} />
-                <View style={styles.cardContent}>
-                  <Text style={[styles.cardTitle, { color: colors.text }]}>{memory.title}</Text>
-                  <Text style={[styles.cardDate, { color: colors.subtext }]}>
-                    {new Date(memory.createdAt).toLocaleDateString('hr-HR', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                  <Text style={[styles.cardLocation, { color: colors.subtext }]}>
-                    📍 {memory.latitude.toFixed(4)}, {memory.longitude.toFixed(4)}
-                  </Text>
-                  {memory.description ? (
-                    <Text style={[styles.cardDescription, { color: colors.subtext }]} numberOfLines={2}>
-                      {memory.description}
-                    </Text>
-                  ) : null}
-                </View>
+                <Text
+                  style={[
+                    styles.filterText,
+                    { color: activeFilter === filter ? '#fff' : colors.subtext },
+                  ]}
+                >
+                  {filter}
+                </Text>
               </TouchableOpacity>
             ))}
-          </View>
-        )}
-      />
-    </View>
+          </ScrollView>
+        </View>
+
+        <FlatList
+          data={groups}
+          keyExtractor={(item) => item.label}
+          contentContainerStyle={styles.list}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={[styles.emptyText, { color: colors.subtext }]}>
+                {search ? 'Nema rezultata za pretragu' : 'Nemaš još uspomena'}
+              </Text>
+            </View>
+          }
+          renderItem={({ item: group }) => (
+            <View>
+              <Text style={[styles.groupLabel, { color: colors.primary }]}>
+                📅 {group.label}
+              </Text>
+
+              {group.data.map((memory) => (
+                <Swipeable
+                  key={memory.id}
+                  renderRightActions={() => (
+                    <TouchableOpacity
+                      style={styles.deleteAction}
+                      onPress={() => handleDelete(memory.id)}
+                    >
+                      <Text style={styles.deleteActionText}>🗑️</Text>
+                      <Text style={styles.deleteActionText}>Obriši</Text>
+                    </TouchableOpacity>
+                  )}
+                >
+                  <TouchableOpacity
+                    style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => router.push(`/memory/${memory.id}`)}
+                  >
+                    <Image source={{ uri: memory.imageUrl }} style={styles.cardImage} />
+                    <View style={styles.cardContent}>
+                      <Text style={[styles.cardTitle, { color: colors.text }]}>
+                        {memory.isFavorite ? '❤️ ' : ''}{memory.title}
+                      </Text>
+                      <Text style={[styles.cardDate, { color: colors.subtext }]}>
+                        {new Date(memory.createdAt).toLocaleDateString('hr-HR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </Text>
+                      <Text style={[styles.cardLocation, { color: colors.subtext }]}>
+                        📍 {memory.latitude.toFixed(4)}, {memory.longitude.toFixed(4)}
+                      </Text>
+                      {memory.description ? (
+                        <Text style={[styles.cardDescription, { color: colors.subtext }]} numberOfLines={2}>
+                          {memory.description}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                </Swipeable>
+              ))}
+            </View>
+          )}
+        />
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -272,4 +323,13 @@ const styles = StyleSheet.create({
   cardDate: { fontSize: 12, marginBottom: 2 },
   cardLocation: { fontSize: 12, marginBottom: 4 },
   cardDescription: { fontSize: 12 },
+  deleteAction: {
+    backgroundColor: '#ff4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  deleteActionText: { color: '#fff', fontWeight: 'bold', fontSize: 12 },
 });

@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, Image, Animated } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Heatmap } from 'react-native-maps';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
@@ -8,6 +8,9 @@ import { router } from 'expo-router';
 import { useTheme } from '../../lib/ThemeContext';
 import { cacheMemories, getCachedMemories } from '../../lib/offlineStorage';
 import { useNetworkStatus } from '../../lib/useNetworkStatus';
+import { hapticLight, hapticMedium } from '../../lib/haptics';
+import { BlurView } from 'expo-blur';
+import { useShake } from '../../lib/useShake';
 
 interface Memory {
   id: string;
@@ -67,15 +70,32 @@ export default function MapScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<MemoryGroup | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [quickActionsGroup, setQuickActionsGroup] = useState<MemoryGroup | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const { isDark, colors } = useTheme();
   const isOnline = useNetworkStatus();
 
   const translateY = useRef(new Animated.Value(300)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const lastShakeTime = useRef(0);
+
+  const openRandomMemory = useCallback(() => {
+    const now = Date.now();
+    if (now - lastShakeTime.current < 3000) return;
+    lastShakeTime.current = now;
+
+    if (memories.length === 0) return;
+    const random = memories[Math.floor(Math.random() * memories.length)];
+    hapticMedium();
+    router.push(`/memory/${random.id}`);
+  }, [memories]);
+
+  useShake(openRandomMemory);
 
   const showPopup = (group: MemoryGroup) => {
     translateY.setValue(300);
     opacity.setValue(0);
+    hapticLight();
     setSelectedGroup(group);
     setCurrentIndex(0);
     setTimeout(() => {
@@ -91,6 +111,11 @@ export default function MapScreen() {
       Animated.timing(translateY, { toValue: 300, duration: 200, useNativeDriver: true }),
       Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start(() => setSelectedGroup(null));
+  };
+
+  const showQuickActions = (group: MemoryGroup) => {
+    hapticMedium();
+    setQuickActionsGroup(group);
   };
 
   useEffect(() => {
@@ -169,7 +194,7 @@ export default function MapScreen() {
         }}
         showsUserLocation
       >
-        {groups.map((group, index) => (
+        {!showHeatmap && groups.map((group, index) => (
           <Marker
             key={`${index}-${group.memories.some(m => m.isFavorite)}`}
             coordinate={{
@@ -177,9 +202,31 @@ export default function MapScreen() {
               longitude: group.longitude,
             }}
             onPress={() => showPopup(group)}
+            onLongPress={() => {
+              console.log('long press!');
+              showQuickActions(group);
+            }}
             pinColor={group.memories.some(m => m.isFavorite) ? '#ff4444' : '#4CAF50'}
+            tracksViewChanges={false}
           />
         ))}
+
+        {showHeatmap && memories.length > 0 && (
+          <Heatmap
+            points={memories.map(m => ({
+              latitude: m.latitude,
+              longitude: m.longitude,
+              weight: m.isFavorite ? 2 : 1,
+            }))}
+            radius={50}
+            opacity={0.8}
+            gradient={{
+              colors: ['#00ff00', '#ffff00', '#ff0000'],
+              startPoints: [0.1, 0.5, 1.0],
+              colorMapSize: 256,
+            }}
+          />
+        )}
       </MapView>
 
       {/* Memory of the day gumb */}
@@ -198,80 +245,135 @@ export default function MapScreen() {
         <Text style={styles.timelineButtonText}>🗓️</Text>
       </TouchableOpacity>
 
+      {/* Heatmap gumb */}
+      <TouchableOpacity
+        style={[styles.heatmapButton, { backgroundColor: showHeatmap ? colors.primary : 'rgba(0,0,0,0.6)' }]}
+        onPress={() => {
+          hapticLight();
+          setShowHeatmap(!showHeatmap);
+        }}
+      >
+        <Text style={styles.heatmapButtonText}>🔥</Text>
+      </TouchableOpacity>
+
+      {/* Quick Actions */}
+      {quickActionsGroup && (
+        <BlurView
+          intensity={80}
+          tint={isDark ? 'dark' : 'light'}
+          style={[styles.quickActions, { borderColor: colors.border }]}
+        >
+          <Text style={[styles.quickActionsTitle, { color: colors.text }]}>
+            {quickActionsGroup.memories[0].title}
+          </Text>
+          <TouchableOpacity
+            style={[styles.quickAction, { backgroundColor: colors.card }]}
+            onPress={() => {
+              setQuickActionsGroup(null);
+              router.push(`/memory/${quickActionsGroup.memories[0].id}`);
+            }}
+          >
+            <Text style={[styles.quickActionText, { color: colors.text }]}>👁️ Otvori uspomenu</Text>
+          </TouchableOpacity>
+          {quickActionsGroup.memories.length > 1 && (
+            <TouchableOpacity
+              style={[styles.quickAction, { backgroundColor: colors.card }]}
+              onPress={() => {
+                setQuickActionsGroup(null);
+                showPopup(quickActionsGroup);
+              }}
+            >
+              <Text style={[styles.quickActionText, { color: colors.text }]}>📋 Prikaži sve ({quickActionsGroup.memories.length})</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.quickAction, { backgroundColor: colors.card }]}
+            onPress={() => setQuickActionsGroup(null)}
+          >
+            <Text style={[styles.quickActionText, { color: '#ff4444' }]}>✕ Zatvori</Text>
+          </TouchableOpacity>
+        </BlurView>
+      )}
+
       {selectedGroup && currentMemory && (
         <Animated.View
           style={[
-            styles.popup,
-            { backgroundColor: colors.card, borderColor: colors.border },
+            styles.popupWrapper,
             { transform: [{ translateY }], opacity },
           ]}
         >
-          <Image source={{ uri: currentMemory.imageUrl }} style={styles.popupImage} />
+          <BlurView
+            intensity={80}
+            tint={isDark ? 'dark' : 'light'}
+            style={[styles.popup, { borderColor: colors.border }]}
+          >
+            <Image source={{ uri: currentMemory.imageUrl }} style={styles.popupImage} />
 
-          {selectedGroup.memories.length > 1 && (
-            <View style={styles.indicator}>
-              {selectedGroup.memories.map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.dot,
-                    i === currentIndex ? styles.dotActive : styles.dotInactive,
-                  ]}
-                />
-              ))}
-            </View>
-          )}
+            {selectedGroup.memories.length > 1 && (
+              <View style={styles.indicator}>
+                {selectedGroup.memories.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      i === currentIndex ? styles.dotActive : styles.dotInactive,
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
 
-          <View style={styles.popupContent}>
-            <Text style={[styles.popupTitle, { color: colors.text }]}>
-              {currentMemory.isFavorite ? '❤️ ' : ''}{currentMemory.title}
-            </Text>
-            <Text style={[styles.popupDate, { color: colors.subtext }]}>
-              {new Date(currentMemory.createdAt).toLocaleDateString('hr-HR')}
-            </Text>
+            <View style={styles.popupContent}>
+              <Text style={[styles.popupTitle, { color: colors.text }]}>
+                {currentMemory.isFavorite ? '❤️ ' : ''}{currentMemory.title}
+              </Text>
+              <Text style={[styles.popupDate, { color: colors.subtext }]}>
+                {new Date(currentMemory.createdAt).toLocaleDateString('hr-HR')}
+              </Text>
 
-            <View style={styles.popupButtons}>
-              {selectedGroup.memories.length > 1 && (
-                <View style={styles.navButtons}>
+              <View style={styles.popupButtons}>
+                {selectedGroup.memories.length > 1 && (
+                  <View style={styles.navButtons}>
+                    <TouchableOpacity
+                      style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]}
+                      onPress={handlePrev}
+                      disabled={currentIndex === 0}
+                    >
+                      <Text style={styles.navButtonText}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={[styles.navCount, { color: colors.subtext }]}>
+                      {currentIndex + 1} / {selectedGroup.memories.length}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.navButton, currentIndex === selectedGroup.memories.length - 1 && styles.navButtonDisabled]}
+                      onPress={handleNext}
+                      disabled={currentIndex === selectedGroup.memories.length - 1}
+                    >
+                      <Text style={styles.navButtonText}>→</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <View style={styles.actionButtons}>
                   <TouchableOpacity
-                    style={[styles.navButton, currentIndex === 0 && styles.navButtonDisabled]}
-                    onPress={handlePrev}
-                    disabled={currentIndex === 0}
+                    style={[styles.openButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      hidePopup();
+                      router.push(`/memory/${currentMemory.id}`);
+                    }}
                   >
-                    <Text style={styles.navButtonText}>←</Text>
+                    <Text style={styles.openButtonText}>Otvori →</Text>
                   </TouchableOpacity>
-                  <Text style={[styles.navCount, { color: colors.subtext }]}>
-                    {currentIndex + 1} / {selectedGroup.memories.length}
-                  </Text>
                   <TouchableOpacity
-                    style={[styles.navButton, currentIndex === selectedGroup.memories.length - 1 && styles.navButtonDisabled]}
-                    onPress={handleNext}
-                    disabled={currentIndex === selectedGroup.memories.length - 1}
+                    style={styles.closeButton}
+                    onPress={hidePopup}
                   >
-                    <Text style={styles.navButtonText}>→</Text>
+                    <Text style={[styles.closeButtonText, { color: colors.subtext }]}>✕</Text>
                   </TouchableOpacity>
                 </View>
-              )}
-
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={[styles.openButton, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    hidePopup();
-                    router.push(`/memory/${currentMemory.id}`);
-                  }}
-                >
-                  <Text style={styles.openButtonText}>Otvori →</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={hidePopup}
-                >
-                  <Text style={[styles.closeButtonText, { color: colors.subtext }]}>✕</Text>
-                </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </BlurView>
         </Animated.View>
       )}
     </View>
@@ -314,16 +416,48 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   timelineButtonText: { fontSize: 22 },
-  popup: {
+  heatmapButton: {
+    position: 'absolute',
+    top: 100,
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  heatmapButtonText: { fontSize: 22 },
+  quickActions: {
     position: 'absolute',
     bottom: 24,
     left: 16,
     right: 16,
     borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 1,
+    padding: 16,
+  },
+  quickActionsTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  quickAction: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  quickActionText: { fontSize: 14, fontWeight: 'bold' },
+  popupWrapper: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
     elevation: 8,
   },
-  popupImage: { width: '100%', height: 150, borderRadius: 16 },
+  popup: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+  },
+  popupImage: { width: '100%', height: 150 },
   indicator: {
     flexDirection: 'row',
     justifyContent: 'center',

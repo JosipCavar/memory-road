@@ -84,7 +84,6 @@ export default function ProfileScreen() {
       const memoriesSnap = await getDocs(q2);
       const memoriesData = memoriesSnap.docs.map(d => d.data());
 
-      // Ukupni km
       let km = 0;
       for (let i = 1; i < memoriesData.length; i++) {
         km += haversineDistance(
@@ -96,14 +95,12 @@ export default function ProfileScreen() {
       }
       setTotalKm(Math.round(km));
 
-      // Dohvati nazive država
       const countryNames = await Promise.all(
         memoriesData.map(m => getLocationName(m.latitude, m.longitude))
       );
       const uniqueCountries = [...new Set(countryNames.filter(c => c !== 'Nepoznata država' && c !== 'Nepoznata lokacija' && c !== ''))];
       setCountries(uniqueCountries);
 
-      // Achievement stats
       const favoritesCount = memoriesData.filter(m => m.isFavorite === true).length;
       setAchievementStats({
         memoriesCount: memoriesData.length,
@@ -284,6 +281,37 @@ export default function ProfileScreen() {
         >
           <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
             🏆 Dostignuća ({unlockedCount}/{ACHIEVEMENTS.length})
+          </Text>
+          <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/challenges')}
+        >
+          <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
+            🎯 Izazovi
+          </Text>
+          <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/friends')}
+        >
+          <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
+            👥 Prijatelji
+          </Text>
+          <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
+        </TouchableOpacity>
+
+        {/* Statistike & Grafikon gumb */}
+        <TouchableOpacity
+          style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/stats-chart')}
+        >
+          <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
+            📊 Statistike & Grafikon
           </Text>
           <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
         </TouchableOpacity>
