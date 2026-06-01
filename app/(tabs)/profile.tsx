@@ -10,26 +10,31 @@ import {
   ActivityIndicator,
   Switch,
   Modal,
+  Image,
 } from 'react-native';
-import { doc, getDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getCountFromServer, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../lib/ThemeContext';
 import QRCode from 'react-native-qrcode-svg';
+import * as ImagePicker from 'expo-image-picker';
 
 interface UserProfile {
   username: string;
   email: string;
   shareToken: string;
   createdAt: string;
+  avatarUrl?: string;
 }
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [memoriesCount, setMemoriesCount] = useState(0);
+  const [uniqueLocations, setUniqueLocations] = useState(0);
   const [showQR, setShowQR] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { isDark, toggleTheme, colors } = useTheme();
 
   useFocusEffect(
@@ -48,16 +53,71 @@ export default function ProfileScreen() {
         setProfile(userDoc.data() as UserProfile);
       }
 
+      // Dohvati broj uspomena
       const q = query(
         collection(db, 'memories'),
         where('userId', '==', session.user.id)
       );
       const snapshot = await getCountFromServer(q);
       setMemoriesCount(snapshot.data().count);
+
+      // Dohvati jedinstvene lokacije
+      const memoriesSnap = await getDocs(q);
+      const memoriesData = memoriesSnap.docs.map(d => d.data());
+      const locations = new Set(
+        memoriesData.map(m =>
+          `${Math.round(m.latitude * 10) / 10},${Math.round(m.longitude * 10) / 10}`
+        )
+      );
+      setUniqueLocations(locations.size);
+
     } catch (error: any) {
       Alert.alert('Greška', error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangeAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Greška', 'Potrebna je dozvola za galeriju');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (result.canceled) return;
+
+    setUploadingAvatar(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const uri = result.assets[0].uri;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const arrayBuffer = await new Response(blob).arrayBuffer();
+      const fileName = `${session.user.id}/avatar.jpg`;
+
+      await supabase.storage
+        .from('avatars')
+        .upload(fileName, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      const avatarUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+      await updateDoc(doc(db, 'users', session.user.id), { avatarUrl });
+      setProfile((prev) => prev ? { ...prev, avatarUrl } : prev);
+    } catch (error: any) {
+      Alert.alert('Greška', error.message);
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -103,25 +163,60 @@ export default function ProfileScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Profil</Text>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>
-              {profile?.username?.charAt(0).toUpperCase() ?? '?'}
-            </Text>
-          </View>
+          <TouchableOpacity onPress={handleChangeAvatar} disabled={uploadingAvatar}>
+            {profile?.avatarUrl ? (
+              <View style={styles.avatarContainer}>
+                <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
+                {uploadingAvatar && (
+                  <View style={styles.avatarOverlay}>
+                    <ActivityIndicator color="#fff" />
+                  </View>
+                )}
+                <View style={styles.avatarEditBadge}>
+                  <Text style={styles.avatarEditText}>✏️</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                {uploadingAvatar ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Text style={styles.avatarText}>
+                      {profile?.username?.charAt(0).toUpperCase() ?? '?'}
+                    </Text>
+                    <View style={styles.avatarEditBadge}>
+                      <Text style={styles.avatarEditText}>✏️</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+          </TouchableOpacity>
           <Text style={[styles.username, { color: colors.text }]}>{profile?.username}</Text>
           <Text style={[styles.email, { color: colors.subtext }]}>{profile?.email}</Text>
         </View>
 
+        {/* Statistike */}
         <TouchableOpacity
           style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/memories-list')}
         >
-          <View style={styles.stat}>
-            <Text style={[styles.statNumber, { color: colors.primary }]}>{memoriesCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.subtext }]}>Uspomena →</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.stat}>
+              <Text style={[styles.statNumber, { color: colors.primary }]}>{memoriesCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>Uspomena</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.stat}>
+              <Text style={[styles.statNumber, { color: colors.primary }]}>{uniqueLocations}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>Lokacija</Text>
+            </View>
           </View>
+          <Text style={[styles.statsHint, { color: colors.subtext }]}>Pritisni za sve uspomene →</Text>
         </TouchableOpacity>
 
+        {/* Dark/Light mode */}
         <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.themeText, { color: colors.text }]}>
             {isDark ? '🌙 Dark mode' : '☀️ Light mode'}
@@ -221,6 +316,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 12,
+    position: 'relative',
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatar: {
     width: 80,
     height: 80,
@@ -228,20 +344,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    position: 'relative',
   },
   avatarText: { fontSize: 32, fontWeight: 'bold', color: '#fff' },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#4CAF50',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarEditText: { fontSize: 12 },
   username: { fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
   email: { fontSize: 14 },
   statsCard: {
     borderRadius: 16,
     padding: 20,
-    alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
   },
-  stat: { alignItems: 'center' },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  stat: { alignItems: 'center', flex: 1 },
+  statDivider: { width: 1, height: 40 },
   statNumber: { fontSize: 36, fontWeight: 'bold' },
   statLabel: { fontSize: 14, marginTop: 4 },
+  statsHint: { fontSize: 12, textAlign: 'center' },
   themeCard: {
     borderRadius: 16,
     padding: 16,

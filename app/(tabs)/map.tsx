@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, Image } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, Image, Animated } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
@@ -66,6 +66,29 @@ export default function MapScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const { isDark, colors } = useTheme();
 
+  const translateY = useRef(new Animated.Value(300)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  const showPopup = (group: MemoryGroup) => {
+    translateY.setValue(300);
+    opacity.setValue(0);
+    setSelectedGroup(group);
+    setCurrentIndex(0);
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.spring(translateY, { toValue: 0, damping: 15, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]).start();
+    }, 50);
+  };
+
+  const hidePopup = () => {
+    Animated.parallel([
+      Animated.timing(translateY, { toValue: 300, duration: 200, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start(() => setSelectedGroup(null));
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) setUserId(session.user.id);
@@ -93,11 +116,6 @@ export default function MapScreen() {
   }, [userId]);
 
   const groups = groupMemories(memories);
-
-  const handleMarkerPress = (group: MemoryGroup) => {
-    setSelectedGroup(group);
-    setCurrentIndex(0);
-  };
 
   const handlePrev = () => {
     if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
@@ -139,14 +157,20 @@ export default function MapScreen() {
               latitude: group.latitude,
               longitude: group.longitude,
             }}
-            onPress={() => handleMarkerPress(group)}
+            onPress={() => showPopup(group)}
             pinColor="#4CAF50"
           />
         ))}
       </MapView>
 
       {selectedGroup && currentMemory && (
-        <View style={[styles.popup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Animated.View
+          style={[
+            styles.popup,
+            { backgroundColor: colors.card, borderColor: colors.border },
+            { transform: [{ translateY }], opacity },
+          ]}
+        >
           <Image source={{ uri: currentMemory.imageUrl }} style={styles.popupImage} />
 
           {selectedGroup.memories.length > 1 && (
@@ -196,7 +220,7 @@ export default function MapScreen() {
                 <TouchableOpacity
                   style={[styles.openButton, { backgroundColor: colors.primary }]}
                   onPress={() => {
-                    setSelectedGroup(null);
+                    hidePopup();
                     router.push(`/memory/${currentMemory.id}`);
                   }}
                 >
@@ -204,14 +228,14 @@ export default function MapScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.closeButton}
-                  onPress={() => setSelectedGroup(null)}
+                  onPress={hidePopup}
                 >
                   <Text style={[styles.closeButtonText, { color: colors.subtext }]}>✕</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -227,14 +251,10 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     borderRadius: 16,
-    overflow: 'hidden',
     borderWidth: 1,
     elevation: 8,
   },
-  popupImage: {
-    width: '100%',
-    height: 150,
-  },
+  popupImage: { width: '100%', height: 150, borderRadius: 16 },
   indicator: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -248,9 +268,7 @@ const styles = StyleSheet.create({
   },
   dotActive: { backgroundColor: '#4CAF50' },
   dotInactive: { backgroundColor: '#444' },
-  popupContent: {
-    padding: 16,
-  },
+  popupContent: { padding: 16 },
   popupTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
   popupDate: { fontSize: 13, marginBottom: 12 },
   popupButtons: { gap: 8 },
