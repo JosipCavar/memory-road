@@ -19,6 +19,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../lib/ThemeContext';
 import QRCode from 'react-native-qrcode-svg';
 import * as ImagePicker from 'expo-image-picker';
+import { getLocationName } from '../../lib/geocoding';
 
 interface UserProfile {
   username: string;
@@ -44,8 +45,8 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [memoriesCount, setMemoriesCount] = useState(0);
-  const [uniqueLocations, setUniqueLocations] = useState(0);
   const [totalKm, setTotalKm] = useState(0);
+  const [countries, setCountries] = useState<string[]>([]);
   const [showQR, setShowQR] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { isDark, toggleTheme, colors } = useTheme();
@@ -66,7 +67,6 @@ export default function ProfileScreen() {
         setProfile(userDoc.data() as UserProfile);
       }
 
-      // Dohvati broj uspomena
       const q = query(
         collection(db, 'memories'),
         where('userId', '==', session.user.id)
@@ -74,7 +74,6 @@ export default function ProfileScreen() {
       const snapshot = await getCountFromServer(q);
       setMemoriesCount(snapshot.data().count);
 
-      // Dohvati sve uspomene za statistike
       const q2 = query(
         collection(db, 'memories'),
         where('userId', '==', session.user.id),
@@ -82,14 +81,6 @@ export default function ProfileScreen() {
       );
       const memoriesSnap = await getDocs(q2);
       const memoriesData = memoriesSnap.docs.map(d => d.data());
-
-      // Jedinstvene lokacije
-      const locations = new Set(
-        memoriesData.map(m =>
-          `${Math.round(m.latitude * 10) / 10},${Math.round(m.longitude * 10) / 10}`
-        )
-      );
-      setUniqueLocations(locations.size);
 
       // Ukupni km
       let km = 0;
@@ -102,6 +93,13 @@ export default function ProfileScreen() {
         );
       }
       setTotalKm(Math.round(km));
+
+      // Dohvati nazive država
+      const countryNames = await Promise.all(
+        memoriesData.map(m => getLocationName(m.latitude, m.longitude))
+      );
+      const uniqueCountries = [...new Set(countryNames.filter(c => c !== 'Nepoznata država'))];
+      setCountries(uniqueCountries);
 
     } catch (error: any) {
       Alert.alert('Greška', error.message);
@@ -241,8 +239,8 @@ export default function ProfileScreen() {
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.stat}>
-              <Text style={[styles.statNumber, { color: colors.primary }]}>{uniqueLocations}</Text>
-              <Text style={[styles.statLabel, { color: colors.subtext }]}>Lokacija</Text>
+              <Text style={[styles.statNumber, { color: colors.primary }]}>{countries.length}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>Država</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.stat}>
@@ -252,6 +250,20 @@ export default function ProfileScreen() {
           </View>
           <Text style={[styles.statsHint, { color: colors.subtext }]}>Pritisni za sve uspomene →</Text>
         </TouchableOpacity>
+
+        {/* Države */}
+        {countries.length > 0 && (
+          <View style={[styles.countriesCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.countriesTitle, { color: colors.text }]}>🌍 Posjećene države</Text>
+            <View style={styles.countriesList}>
+              {countries.map((country, index) => (
+                <View key={index} style={[styles.countryBadge, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.countryText, { color: colors.primary }]}>{country}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Dark/Light mode */}
         <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -415,6 +427,20 @@ const styles = StyleSheet.create({
   statNumber: { fontSize: 28, fontWeight: 'bold' },
   statLabel: { fontSize: 12, marginTop: 4 },
   statsHint: { fontSize: 12, textAlign: 'center' },
+  countriesCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  countriesTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  countriesList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  countryBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  countryText: { fontSize: 14, fontWeight: 'bold' },
   themeCard: {
     borderRadius: 16,
     padding: 16,
