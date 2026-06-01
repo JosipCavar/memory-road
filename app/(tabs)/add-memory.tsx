@@ -9,6 +9,7 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -21,11 +22,15 @@ import { useTheme } from '../../lib/ThemeContext';
 export default function AddMemoryScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [image, setImage] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const { colors } = useTheme();
 
   const pickImage = async () => {
+    if (images.length >= 5) {
+      Alert.alert('Maksimum', 'Možeš dodati maksimalno 5 slika');
+      return;
+    }
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Greška', 'Potrebna je dozvola za kameru');
@@ -39,11 +44,15 @@ export default function AddMemoryScreen() {
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      setImages([...images, result.assets[0].uri]);
     }
   };
 
   const pickFromGallery = async () => {
+    if (images.length >= 5) {
+      Alert.alert('Maksimum', 'Možeš dodati maksimalno 5 slika');
+      return;
+    }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Greška', 'Potrebna je dozvola za galeriju');
@@ -57,15 +66,19 @@ export default function AddMemoryScreen() {
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      setImages([...images, result.assets[0].uri]);
     }
   };
 
-  const uploadImage = async (uri: string, userId: string): Promise<string> => {
+  const removeImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  const uploadImage = async (uri: string, userId: string, index: number): Promise<string> => {
     const response = await fetch(uri);
     const blob = await response.blob();
     const arrayBuffer = await new Response(blob).arrayBuffer();
-    const fileName = `${userId}/${Date.now()}.jpg`;
+    const fileName = `${userId}/${Date.now()}_${index}.jpg`;
 
     const { error } = await supabase.storage
       .from('memories')
@@ -78,8 +91,8 @@ export default function AddMemoryScreen() {
   };
 
   const handleSave = async () => {
-    if (!title || !image) {
-      Alert.alert('Greška', 'Naslov i slika su obavezni');
+    if (!title || images.length === 0) {
+      Alert.alert('Greška', 'Naslov i barem jedna slika su obavezni');
       return;
     }
 
@@ -99,14 +112,18 @@ export default function AddMemoryScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Nisi prijavljen');
 
-      const imageUrl = await uploadImage(image, session.user.id);
+      // Upload svih slika
+      const imageUrls = await Promise.all(
+        images.map((uri, index) => uploadImage(uri, session.user.id, index))
+      );
 
       await addDoc(collection(db, 'memories'), {
         title,
         description,
         latitude,
         longitude,
-        imageUrl,
+        imageUrls,
+        imageUrl: imageUrls[0], // za kompatibilnost sa starim kodom
         userId: session.user.id,
         createdAt: new Date().toISOString(),
       });
@@ -114,7 +131,7 @@ export default function AddMemoryScreen() {
       Alert.alert('Uspjeh!', 'Uspomena je spremljena!');
       setTitle('');
       setDescription('');
-      setImage(null);
+      setImages([]);
       router.push('/(tabs)/map');
     } catch (error: any) {
       Alert.alert('Greška', error.message);
@@ -130,22 +147,52 @@ export default function AddMemoryScreen() {
     >
       <Text style={[styles.title, { color: colors.text }]}>Nova uspomena</Text>
 
-      <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={[styles.imagePlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.imagePlaceholderText, { color: colors.subtext }]}>📷 Fotografiraj</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      {/* Prikaz odabranih slika */}
+      {images.length > 0 && (
+        <FlatList
+          horizontal
+          data={images}
+          keyExtractor={(_, index) => index.toString()}
+          showsHorizontalScrollIndicator={false}
+          style={styles.imageList}
+          renderItem={({ item, index }) => (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: item }} style={styles.image} />
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => removeImage(index)}
+              >
+                <Text style={styles.removeButtonText}>✕</Text>
+              </TouchableOpacity>
+              {index === 0 && (
+                <View style={styles.mainBadge}>
+                  <Text style={styles.mainBadgeText}>Glavna</Text>
+                </View>
+              )}
+            </View>
+          )}
+        />
+      )}
 
-      <TouchableOpacity
-        style={[styles.galleryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-        onPress={pickFromGallery}
-      >
-        <Text style={[styles.galleryButtonText, { color: colors.subtext }]}>🖼️ Odaberi iz galerije</Text>
-      </TouchableOpacity>
+      {/* Gumbi za dodavanje slika */}
+      <View style={styles.imageButtons}>
+        <TouchableOpacity
+          style={[styles.imageButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={pickImage}
+        >
+          <Text style={[styles.imageButtonText, { color: colors.subtext }]}>📷 Fotografiraj</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.imageButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={pickFromGallery}
+        >
+          <Text style={[styles.imageButtonText, { color: colors.subtext }]}>🖼️ Galerija</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={[styles.imageCount, { color: colors.subtext }]}>
+        {images.length}/5 slika
+      </Text>
 
       <TextInput
         style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
@@ -184,26 +231,41 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 24 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 24, marginTop: 48 },
-  imageButton: { marginBottom: 12 },
-  image: { width: '100%', height: 250, borderRadius: 12 },
-  imagePlaceholder: {
-    width: '100%',
-    height: 200,
+  imageList: { marginBottom: 12 },
+  imageContainer: { position: 'relative', marginRight: 8 },
+  image: { width: 120, height: 120, borderRadius: 12 },
+  removeButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 24,
+    height: 24,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderStyle: 'dashed',
   },
-  imagePlaceholderText: { fontSize: 18 },
-  galleryButton: {
+  removeButtonText: { color: '#fff', fontSize: 12 },
+  mainBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  mainBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  imageButtons: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  imageButton: {
+    flex: 1,
     padding: 12,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 16,
     borderWidth: 1,
   },
-  galleryButtonText: { fontSize: 14 },
+  imageButtonText: { fontSize: 14 },
+  imageCount: { fontSize: 12, marginBottom: 16, textAlign: 'center' },
   input: {
     padding: 16,
     borderRadius: 12,

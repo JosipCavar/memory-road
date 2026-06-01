@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,9 @@ import {
   Modal,
   StatusBar,
   Dimensions,
+  FlatList,
 } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
@@ -28,6 +28,7 @@ interface Memory {
   latitude: number;
   longitude: number;
   imageUrl: string;
+  imageUrls?: string[];
   createdAt: string;
   userId: string;
 }
@@ -36,14 +37,14 @@ export default function MemoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [memory, setMemory] = useState<Memory | null>(null);
   const [loading, setLoading] = useState(true);
-  const [imageFullscreen, setImageFullscreen] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const { colors } = useTheme();
 
   useFocusEffect(
-  useCallback(() => {
-    loadMemory();
-  }, [id])
-);
+    useCallback(() => {
+      loadMemory();
+    }, [id])
+  );
 
   const loadMemory = async () => {
     try {
@@ -93,16 +94,42 @@ export default function MemoryScreen() {
     );
   }
 
+  // Kompatibilnost sa starim i novim formatom
+  const allImages = memory.imageUrls ?? [memory.imageUrl];
+
   return (
     <>
-      <StatusBar hidden={imageFullscreen} />
+      <StatusBar hidden={!!fullscreenImage} />
       <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-        <TouchableOpacity onPress={() => setImageFullscreen(true)}>
-          <Image source={{ uri: memory.imageUrl }} style={styles.image} resizeMode="cover" />
-          <View style={styles.zoomHint}>
-            <Text style={styles.zoomHintText}>🔍 Klikni za prikaz</Text>
+
+        {/* Horizontalni scroll slika */}
+        <FlatList
+          horizontal
+          data={allImages}
+          keyExtractor={(_, index) => index.toString()}
+          showsHorizontalScrollIndicator={false}
+          pagingEnabled
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => setFullscreenImage(item)}>
+              <Image source={{ uri: item }} style={styles.image} resizeMode="cover" />
+              <View style={styles.zoomHint}>
+                <Text style={styles.zoomHintText}>🔍 Klikni za prikaz</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+
+        {/* Indikator slika */}
+        {allImages.length > 1 && (
+          <View style={styles.indicator}>
+            {allImages.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.dot, { backgroundColor: colors.primary }]}
+              />
+            ))}
           </View>
-        </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>← Nazad</Text>
@@ -127,6 +154,14 @@ export default function MemoryScreen() {
             </Text>
           </View>
 
+          {allImages.length > 1 && (
+            <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.infoText, { color: colors.subtext }]}>
+                🖼️ {allImages.length} slika
+              </Text>
+            </View>
+          )}
+
           {memory.description ? (
             <View style={[styles.descriptionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.descriptionLabel, { color: colors.primary }]}>Opis</Text>
@@ -147,25 +182,28 @@ export default function MemoryScreen() {
         </View>
       </ScrollView>
 
+      {/* Fullscreen modal */}
       <Modal
-        visible={imageFullscreen}
+        visible={!!fullscreenImage}
         transparent
         animationType="fade"
         statusBarTranslucent
-        onRequestClose={() => setImageFullscreen(false)}
+        onRequestClose={() => setFullscreenImage(null)}
       >
         <View style={styles.modalContainer}>
           <TouchableOpacity
             style={styles.modalClose}
-            onPress={() => setImageFullscreen(false)}
+            onPress={() => setFullscreenImage(null)}
           >
             <Text style={styles.modalCloseText}>✕</Text>
           </TouchableOpacity>
-          <Image
-            source={{ uri: memory.imageUrl }}
-            style={styles.fullscreenImage}
-            resizeMode="contain"
-          />
+          {fullscreenImage && (
+            <Image
+              source={{ uri: fullscreenImage }}
+              style={styles.fullscreenImage}
+              resizeMode="contain"
+            />
+          )}
         </View>
       </Modal>
     </>
@@ -176,7 +214,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: 16 },
-  image: { width: '100%', height: 300 },
+  image: { width, height: 300 },
   zoomHint: {
     position: 'absolute',
     bottom: 8,
@@ -187,6 +225,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   zoomHintText: { color: '#fff', fontSize: 12 },
+  indicator: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
   backButton: {
     position: 'absolute',
     top: 48,
@@ -253,8 +302,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalCloseText: { color: '#fff', fontSize: 18 },
-  fullscreenImage: {
-    width,
-    height,
-  },
+  fullscreenImage: { width, height },
 });

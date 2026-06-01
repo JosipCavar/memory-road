@@ -12,7 +12,7 @@ import {
   Modal,
   Image,
 } from 'react-native';
-import { doc, getDoc, collection, query, where, getCountFromServer, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getCountFromServer, getDocs, updateDoc, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
@@ -28,11 +28,24 @@ interface UserProfile {
   avatarUrl?: string;
 }
 
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [memoriesCount, setMemoriesCount] = useState(0);
   const [uniqueLocations, setUniqueLocations] = useState(0);
+  const [totalKm, setTotalKm] = useState(0);
   const [showQR, setShowQR] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { isDark, toggleTheme, colors } = useTheme();
@@ -61,15 +74,34 @@ export default function ProfileScreen() {
       const snapshot = await getCountFromServer(q);
       setMemoriesCount(snapshot.data().count);
 
-      // Dohvati jedinstvene lokacije
-      const memoriesSnap = await getDocs(q);
+      // Dohvati sve uspomene za statistike
+      const q2 = query(
+        collection(db, 'memories'),
+        where('userId', '==', session.user.id),
+        orderBy('createdAt', 'asc')
+      );
+      const memoriesSnap = await getDocs(q2);
       const memoriesData = memoriesSnap.docs.map(d => d.data());
+
+      // Jedinstvene lokacije
       const locations = new Set(
         memoriesData.map(m =>
           `${Math.round(m.latitude * 10) / 10},${Math.round(m.longitude * 10) / 10}`
         )
       );
       setUniqueLocations(locations.size);
+
+      // Ukupni km
+      let km = 0;
+      for (let i = 1; i < memoriesData.length; i++) {
+        km += haversineDistance(
+          memoriesData[i - 1].latitude,
+          memoriesData[i - 1].longitude,
+          memoriesData[i].latitude,
+          memoriesData[i].longitude
+        );
+      }
+      setTotalKm(Math.round(km));
 
     } catch (error: any) {
       Alert.alert('Greška', error.message);
@@ -211,6 +243,11 @@ export default function ProfileScreen() {
             <View style={styles.stat}>
               <Text style={[styles.statNumber, { color: colors.primary }]}>{uniqueLocations}</Text>
               <Text style={[styles.statLabel, { color: colors.subtext }]}>Lokacija</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.stat}>
+              <Text style={[styles.statNumber, { color: colors.primary }]}>{totalKm}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>km</Text>
             </View>
           </View>
           <Text style={[styles.statsHint, { color: colors.subtext }]}>Pritisni za sve uspomene →</Text>
@@ -375,8 +412,8 @@ const styles = StyleSheet.create({
   },
   stat: { alignItems: 'center', flex: 1 },
   statDivider: { width: 1, height: 40 },
-  statNumber: { fontSize: 36, fontWeight: 'bold' },
-  statLabel: { fontSize: 14, marginTop: 4 },
+  statNumber: { fontSize: 28, fontWeight: 'bold' },
+  statLabel: { fontSize: 12, marginTop: 4 },
   statsHint: { fontSize: 12, textAlign: 'center' },
   themeCard: {
     borderRadius: 16,

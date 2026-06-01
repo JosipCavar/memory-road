@@ -6,6 +6,8 @@ import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
 import { useTheme } from '../../lib/ThemeContext';
+import { cacheMemories, getCachedMemories } from '../../lib/offlineStorage';
+import { useNetworkStatus } from '../../lib/useNetworkStatus';
 
 interface Memory {
   id: string;
@@ -65,6 +67,7 @@ export default function MapScreen() {
   const [selectedGroup, setSelectedGroup] = useState<MemoryGroup | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const { isDark, colors } = useTheme();
+  const isOnline = useNetworkStatus();
 
   const translateY = useRef(new Animated.Value(300)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -98,6 +101,16 @@ export default function MapScreen() {
   useEffect(() => {
     if (!userId) return;
 
+    if (!isOnline) {
+      // Offline — učitaj iz cachea
+      getCachedMemories(userId).then((cached) => {
+        setMemories(cached);
+        setLoading(false);
+      });
+      return;
+    }
+
+    // Online — dohvati iz Firestorea i cacheiraj
     const q = query(
       collection(db, 'memories'),
       where('userId', '==', userId)
@@ -109,11 +122,12 @@ export default function MapScreen() {
         ...doc.data(),
       })) as Memory[];
       setMemories(data);
+      cacheMemories(userId, data);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [userId]);
+  }, [userId, isOnline]);
 
   const groups = groupMemories(memories);
 
@@ -139,6 +153,13 @@ export default function MapScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Offline banner */}
+      {!isOnline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>📵 Offline mode — prikazuju se cackirani podaci</Text>
+        </View>
+      )}
+
       <MapView
         style={styles.map}
         customMapStyle={isDark ? darkMapStyle : []}
@@ -245,6 +266,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  offlineBanner: {
+    backgroundColor: '#ff9800',
+    padding: 8,
+    alignItems: 'center',
+  },
+  offlineBannerText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
   popup: {
     position: 'absolute',
     bottom: 24,
