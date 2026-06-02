@@ -4,19 +4,54 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 
 ## 👥 Tim
 
-- Josip Ćavar
+- Josip Čavar
 - Safet Srna
 - Jozo Matej Lasić
-- Ivan Zivković
+- Ivan Živković
 
 ## 📱 Funkcionalnosti
 
-- 🔐 **Registracija i prijava** — Supabase autentifikacija
-- 🗺️ **Interaktivna karta** — Google Maps s pinovima uspomena
-- 📷 **Dodavanje uspomena** — kamera ili galerija + automatska lokacija
-- 👁️ **Pregled uspomene** — slika, opis, datum i koordinate
-- 🔗 **Dijeljenje karte** — generiraj link i podijeli svoju kartu s drugima
-- 👤 **Privatni profil** — samo ti vidiš svoje uspomene
+### 🗺️ Karta
+- Interaktivna Google karta s pinovima uspomena
+- Heatmap prikaz aktivnosti 🔥
+- Glassmorphism popup s pregledom uspomene
+- Floating action button za brzo dodavanje
+- Shake to random memory 📳
+- Memory of the day 📅
+- Timeline prikaz 🗓️
+
+### 📸 Uspomene
+- Dodavanje s kamerom ili galerijom (do 5 slika)
+- Automatsko spremanje GPS lokacije
+- Favoriti ❤️
+- Fullscreen pregled slika
+- Swipe to delete, Pull to refresh
+
+### 🏆 Gamifikacija
+- 12 dostignuća s progress barom i konfeti animacijom
+- Tjedni i mjesečni izazovi
+
+### 👥 Socijalne funkcije
+- Praćenje prijatelja
+- Pregled tuđe karte
+- QR kod i link dijeljenje
+
+### 📊 Statistike
+- Grafikon uspomena po mjesecima
+- Broj posjećenih država
+- Ukupni prijeđeni km
+
+### 🎨 Dizajn i UX
+- Dark/Light mode
+- Inter font
+- Animirani splash screen
+- Skeleton loading
+- Haptic feedback
+- Onboarding ekran za nove korisnike
+
+### 📵 Offline podrška
+- Caching uspomena
+- Offline banner
 
 ## 🛠️ Tehnologije
 
@@ -26,10 +61,14 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 | Expo Router | Navigacija |
 | Supabase Auth | Autentifikacija korisnika |
 | Supabase Storage | Pohrana slika |
-| Firebase Firestore | Baza podataka (uspomene, korisnici) |
+| Firebase Firestore | Baza podataka |
 | React Native Maps | Karta s pinovima |
 | Expo Location | GPS lokacija |
 | Expo Camera | Fotografiranje |
+| Expo Blur | Glassmorphism efekt |
+| Expo Haptics | Haptički feedback |
+| Expo Sensors | Shake detekcija |
+| React Native Chart Kit | Grafikoni |
 
 ## 🚀 Pokretanje projekta
 
@@ -42,91 +81,102 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 
 ### Instalacija
 
-```bash
 git clone https://github.com/JosipCavar/memory-road.git
 cd memory-road
 npm install --legacy-peer-deps
-```
 
 ### Konfiguracija
 
-Kreiraj `.env` fajl u root direktoriju:
+Kreiraj .env fajl u root direktoriju:
 
-```env
 EXPO_PUBLIC_SUPABASE_URL=tvoj_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=tvoj_supabase_anon_key
-
 EXPO_PUBLIC_FIREBASE_API_KEY=tvoj_firebase_api_key
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tvoj_projekt.firebaseapp.com
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=tvoj_projekt_id
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tvoj_projekt.firebasestorage.app
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tvoj_sender_id
 EXPO_PUBLIC_FIREBASE_APP_ID=tvoj_app_id
-```
 
 ### Pokretanje
 
-```bash
 npx expo start
-```
 
 Skeniraj QR kod s Expo Go aplikacijom.
 
 ## 📁 Struktura projekta
 
-```
 memory-road/
 ├── app/
 │   ├── (auth)/
-│   │   ├── login.tsx        # Ekran za prijavu
-│   │   └── register.tsx     # Ekran za registraciju
+│   │   ├── login.tsx
+│   │   └── register.tsx
 │   ├── (tabs)/
-│   │   ├── _layout.tsx      # Tab navigacija
-│   │   ├── map.tsx          # Glavna karta
-│   │   ├── add-memory.tsx   # Dodavanje uspomene
-│   │   └── profile.tsx      # Profil korisnika
+│   │   ├── map.tsx
+│   │   ├── add-memory.tsx
+│   │   └── profile.tsx
 │   ├── memory/
-│   │   └── [id].tsx         # Detalj uspomene
-│   ├── share/
-│   │   └── [userId].tsx     # Javna karta (bez login)
-│   └── _layout.tsx          # Root layout
+│   │   ├── [id].tsx
+│   │   └── edit/[id].tsx
+│   ├── share/[userId].tsx
+│   ├── memories-list.tsx
+│   ├── timeline.tsx
+│   ├── achievements.tsx
+│   ├── challenges.tsx
+│   ├── friends.tsx
+│   ├── stats-chart.tsx
+│   ├── memoryoftheday.tsx
+│   └── onboarding.tsx
 ├── lib/
-│   ├── supabase.ts          # Supabase konfiguracija
-│   └── firestore.ts         # Firebase konfiguracija
-└── .env                     # API ključevi (nije na Gitu)
-```
+│   ├── supabase.ts
+│   ├── firestore.ts
+│   ├── ThemeContext.tsx
+│   ├── achievements.ts
+│   ├── challenges.ts
+│   ├── friends.ts
+│   ├── geocoding.ts
+│   ├── haptics.ts
+│   ├── useShake.ts
+│   ├── offlineStorage.ts
+│   ├── useNetworkStatus.ts
+│   └── errorHandler.ts
+├── components/
+│   ├── SkeletonLoader.tsx
+│   └── SplashAnimation.tsx
+└── assets/
 
 ## 🗄️ Baza podataka
 
 ### Firestore kolekcije
 
-**memories**
-```
-{
-  title: string,
-  description: string,
-  latitude: number,
-  longitude: number,
-  imageUrl: string,
-  userId: string,
-  createdAt: string
-}
-```
+memories:
+- title: string
+- description: string
+- latitude: number
+- longitude: number
+- imageUrl: string
+- imageUrls: string[]
+- userId: string
+- createdAt: string
+- isFavorite: boolean
 
-**users**
-```
-{
-  username: string,
-  email: string,
-  shareToken: string,
-  createdAt: string
-}
-```
+users:
+- username: string
+- email: string
+- shareToken: string
+- avatarUrl: string
+- createdAt: string
+
+following:
+- followerId: string
+- followingId: string
+- createdAt: string
 
 ### Supabase Storage
 
-- Bucket: `memories` (public)
-- Path: `{userId}/{timestamp}.jpg`
+- Bucket: memories (public) — slike uspomena
+- Bucket: avatars (public) — profilne slike
+- Path: {userId}/{timestamp}.jpg
 
 ## 📋 Predmet
 

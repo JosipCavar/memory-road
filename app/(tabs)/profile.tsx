@@ -21,6 +21,7 @@ import QRCode from 'react-native-qrcode-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { getLocationName } from '../../lib/geocoding';
 import { ACHIEVEMENTS, getUnlockedAchievements, AchievementStats } from '../../lib/achievements';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 interface UserProfile {
   username: string;
@@ -110,7 +111,7 @@ export default function ProfileScreen() {
       });
 
     } catch (error: any) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -153,7 +154,7 @@ export default function ProfileScreen() {
       await updateDoc(doc(db, 'users', session.user.id), { avatarUrl });
       setProfile((prev) => prev ? { ...prev, avatarUrl } : prev);
     } catch (error: any) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
     } finally {
       setUploadingAvatar(false);
     }

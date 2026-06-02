@@ -12,6 +12,7 @@ import {
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/ThemeContext';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -27,7 +28,7 @@ export default function LoginScreen() {
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
       setLoading(false);
       return;
     }

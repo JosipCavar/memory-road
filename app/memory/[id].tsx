@@ -19,6 +19,7 @@ import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/ThemeContext';
 import { hapticSuccess, hapticWarning } from '../../lib/haptics';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 const { width, height } = Dimensions.get('window');
 
@@ -56,7 +57,7 @@ export default function MemoryScreen() {
         setMemory({ id: docSnap.id, ...docSnap.data() } as Memory);
       }
     } catch (error: any) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ export default function MemoryScreen() {
       await hapticSuccess();
       setMemory({ ...memory, isFavorite: newValue });
     } catch (error: any) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
     }
   };
 
@@ -86,7 +87,7 @@ export default function MemoryScreen() {
             await deleteDoc(doc(db, 'memories', id));
             router.back();
           } catch (error: any) {
-            Alert.alert('Greška', error.message);
+            Alert.alert('Greška', getErrorMessage(error));
           }
         },
       },

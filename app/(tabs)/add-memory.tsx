@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
 import { useTheme } from '../../lib/ThemeContext';
 import { hapticSuccess, hapticError } from '../../lib/haptics';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 export default function AddMemoryScreen() {
   const [title, setTitle] = useState('');
@@ -136,7 +137,7 @@ export default function AddMemoryScreen() {
       setImages([]);
       router.push('/(tabs)/map');
     } catch (error: any) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
     } finally {
       setLoading(false);
     }

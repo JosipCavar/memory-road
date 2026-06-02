@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { db } from '../../lib/firestore';
 import { doc, setDoc } from 'firebase/firestore';
 import { useTheme } from '../../lib/ThemeContext';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -32,7 +33,7 @@ export default function RegisterScreen() {
     const { data, error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
       setLoading(false);
       return;
     }

@@ -13,6 +13,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../lib/firestore';
 import { useTheme } from '../../../lib/ThemeContext';
+import { getErrorMessage } from '../../../lib/errorHandler';
 
 export default function EditMemoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,7 +37,7 @@ export default function EditMemoryScreen() {
         setDescription(data.description ?? '');
       }
     } catch (error: any) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -56,7 +57,7 @@ export default function EditMemoryScreen() {
       Alert.alert('Uspjeh!', 'Uspomena je ažurirana!');
       router.back();
     } catch (error: any) {
-      Alert.alert('Greška', error.message);
+      Alert.alert('Greška', getErrorMessage(error));
     } finally {
       setSaving(false);
     }
