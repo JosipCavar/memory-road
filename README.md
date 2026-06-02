@@ -88,7 +88,7 @@ npm install --legacy-peer-deps
 ### Konfiguracija
 
 Kreiraj .env fajl u root direktoriju:
-
+```bash
 EXPO_PUBLIC_SUPABASE_URL=tvoj_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=tvoj_supabase_anon_key
 EXPO_PUBLIC_FIREBASE_API_KEY=tvoj_firebase_api_key
@@ -97,7 +97,7 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID=tvoj_projekt_id
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tvoj_projekt.firebasestorage.app
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tvoj_sender_id
 EXPO_PUBLIC_FIREBASE_APP_ID=tvoj_app_id
-
+```
 ### Pokretanje
 
 npx expo start
@@ -105,7 +105,7 @@ npx expo start
 Skeniraj QR kod s Expo Go aplikacijom.
 
 ## 📁 Struktura projekta
-
+```bash
 memory-road/
 ├── app/
 │   ├── (auth)/
@@ -144,7 +144,7 @@ memory-road/
 │   ├── SkeletonLoader.tsx
 │   └── SplashAnimation.tsx
 └── assets/
-
+```
 ## 🗄️ Baza podataka
 
 ### Firestore kolekcije
