@@ -72,6 +72,12 @@ export default function MapScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quickActionsGroup, setQuickActionsGroup] = useState<MemoryGroup | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [region, setRegion] = useState({
+    latitude: 44.0,
+    longitude: 17.5,
+    latitudeDelta: 5,
+    longitudeDelta: 5,
+  });
   const { isDark, colors } = useTheme();
   const isOnline = useNetworkStatus();
 
@@ -186,26 +192,18 @@ export default function MapScreen() {
       <MapView
         style={styles.map}
         customMapStyle={isDark ? darkMapStyle : []}
-        initialRegion={{
-          latitude: 44.0,
-          longitude: 17.5,
-          latitudeDelta: 5,
-          longitudeDelta: 5,
-        }}
+        initialRegion={region}
+        onRegionChangeComplete={(r) => setRegion(r)}
         showsUserLocation
       >
         {!showHeatmap && groups.map((group, index) => (
           <Marker
-            key={`${index}-${group.memories.some(m => m.isFavorite)}`}
+            key={`${index}-${group.memories.some(m => m.isFavorite)}-${group.memories.length}`}
             coordinate={{
               latitude: group.latitude,
               longitude: group.longitude,
             }}
             onPress={() => showPopup(group)}
-            onLongPress={() => {
-              console.log('long press!');
-              showQuickActions(group);
-            }}
             pinColor={group.memories.some(m => m.isFavorite) ? '#ff4444' : '#4CAF50'}
             tracksViewChanges={false}
           />
@@ -254,6 +252,17 @@ export default function MapScreen() {
         }}
       >
         <Text style={styles.heatmapButtonText}>🔥</Text>
+      </TouchableOpacity>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.primary }]}
+        onPress={() => {
+          hapticLight();
+          router.push('/(tabs)/add-memory');
+        }}
+      >
+        <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
       {/* Quick Actions */}
@@ -428,9 +437,22 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   heatmapButtonText: { fontSize: 22 },
+  fab: {
+    position: 'absolute',
+    bottom: 32,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    zIndex: 10,
+  },
+  fabText: { color: '#fff', fontSize: 32, fontWeight: 'bold', marginTop: -2 },
   quickActions: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 100,
     left: 16,
     right: 16,
     borderRadius: 16,
@@ -447,7 +469,7 @@ const styles = StyleSheet.create({
   quickActionText: { fontSize: 14, fontWeight: 'bold' },
   popupWrapper: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 100,
     left: 16,
     right: 16,
     elevation: 8,

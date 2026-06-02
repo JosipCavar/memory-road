@@ -20,7 +20,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   const handleRegister = async () => {
     if (!email || !password || !username) {
@@ -57,11 +57,15 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-        <Text style={[styles.title, { color: colors.text }]}>🗺️ Memory Road</Text>
-        <Text style={[styles.subtitle, { color: colors.subtext }]}>Kreiraj račun</Text>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>
+          🗺️ Memory Road
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.subtext, fontFamily: fonts.regular }]}>
+          Kreiraj račun
+        </Text>
 
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
           placeholder="Korisničko ime"
           placeholderTextColor={colors.subtext}
           value={username}
@@ -69,7 +73,7 @@ export default function RegisterScreen() {
           autoCapitalize="none"
         />
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
           placeholder="Email"
           placeholderTextColor={colors.subtext}
           value={email}
@@ -78,7 +82,7 @@ export default function RegisterScreen() {
           autoCapitalize="none"
         />
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
           placeholder="Lozinka"
           placeholderTextColor={colors.subtext}
           value={password}
@@ -91,13 +95,13 @@ export default function RegisterScreen() {
           onPress={handleRegister}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText, { fontFamily: fonts.bold }]}>
             {loading ? 'Kreiranje...' : 'Registriraj se'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-          <Text style={[styles.link, { color: colors.primary }]}>
+          <Text style={[styles.link, { color: colors.primary, fontFamily: fonts.regular }]}>
             Već imaš račun? Prijavi se
           </Text>
         </TouchableOpacity>
@@ -109,7 +113,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, justifyContent: 'center', padding: 24 },
-  title: { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  title: { fontSize: 36, textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 18, textAlign: 'center', marginBottom: 32 },
   input: {
     padding: 16,
@@ -125,6 +129,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  buttonText: { color: '#fff', fontSize: 16 },
   link: { textAlign: 'center', fontSize: 14 },
 });

@@ -40,7 +40,8 @@
         {
           "cameraPermission": "Memory Road želi pristupiti kameri za fotografiranje uspomena."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

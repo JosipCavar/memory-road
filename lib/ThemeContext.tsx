@@ -11,6 +11,10 @@ interface ThemeContextType {
     border: string;
     primary: string;
   };
+  fonts: {
+    regular: string;
+    bold: string;
+  };
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -36,8 +40,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     primary: '#4CAF50',
   };
 
+  const fonts = {
+    regular: 'Inter_400Regular',
+    bold: 'Inter_700Bold',
+  };
+
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, colors }}>
+    <ThemeContext.Provider value={{ isDark, toggleTheme, colors, fonts }}>
       {children}
     </ThemeContext.Provider>
   );

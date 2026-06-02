@@ -39,14 +39,12 @@ const FILTERS = ['Sve', 'Favoriti', 'Ovaj mjesec', 'Ove godine'];
 
 function groupByMonth(memories: Memory[]): MemoryGroup[] {
   const groups: { [key: string]: Memory[] } = {};
-
   memories.forEach((memory) => {
     const date = new Date(memory.createdAt);
     const label = date.toLocaleDateString('hr-HR', { month: 'long', year: 'numeric' });
     if (!groups[label]) groups[label] = [];
     groups[label].push(memory);
   });
-
   return Object.entries(groups).map(([label, data]) => ({ label, data }));
 }
 
@@ -57,7 +55,7 @@ export default function MemoriesListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('Sve');
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   useEffect(() => {
     loadMemories();
@@ -145,35 +143,34 @@ export default function MemoriesListScreen() {
   const groups = groupByMonth(filtered);
 
   if (loading) {
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Sve uspomene</Text>
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>Sve uspomene</Text>
+        </View>
+        <View style={{ padding: 16 }}>
+          <MemoryCardSkeleton />
+          <MemoryCardSkeleton />
+          <MemoryCardSkeleton />
+          <MemoryCardSkeleton />
+          <MemoryCardSkeleton />
+        </View>
       </View>
-      <View style={{ padding: 16 }}>
-        <MemoryCardSkeleton />
-        <MemoryCardSkeleton />
-        <MemoryCardSkeleton />
-        <MemoryCardSkeleton />
-        <MemoryCardSkeleton />
-      </View>
-    </View>
-  );
-}
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.backButton, { color: colors.primary }]}>← Nazad</Text>
+            <Text style={[styles.backButton, { color: colors.primary, fontFamily: fonts.bold }]}>← Nazad</Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>Sve uspomene</Text>
-          <Text style={[styles.count, { color: colors.subtext }]}>{filtered.length} uspomena</Text>
+          <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>Sve uspomene</Text>
+          <Text style={[styles.count, { color: colors.subtext, fontFamily: fonts.regular }]}>{filtered.length} uspomena</Text>
 
           <TextInput
-            style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+            style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
             placeholder="🔍 Pretraži uspomene..."
             placeholderTextColor={colors.subtext}
             value={search}
@@ -196,7 +193,7 @@ export default function MemoriesListScreen() {
                 <Text
                   style={[
                     styles.filterText,
-                    { color: activeFilter === filter ? '#fff' : colors.subtext },
+                    { color: activeFilter === filter ? '#fff' : colors.subtext, fontFamily: fonts.bold },
                   ]}
                 >
                   {filter}
@@ -214,14 +211,14 @@ export default function MemoriesListScreen() {
           onRefresh={handleRefresh}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={[styles.emptyText, { color: colors.subtext }]}>
+              <Text style={[styles.emptyText, { color: colors.subtext, fontFamily: fonts.regular }]}>
                 {search ? 'Nema rezultata za pretragu' : 'Nemaš još uspomena'}
               </Text>
             </View>
           }
           renderItem={({ item: group }) => (
             <View>
-              <Text style={[styles.groupLabel, { color: colors.primary }]}>
+              <Text style={[styles.groupLabel, { color: colors.primary, fontFamily: fonts.bold }]}>
                 📅 {group.label}
               </Text>
 
@@ -234,7 +231,7 @@ export default function MemoriesListScreen() {
                       onPress={() => handleDelete(memory.id)}
                     >
                       <Text style={styles.deleteActionText}>🗑️</Text>
-                      <Text style={styles.deleteActionText}>Obriši</Text>
+                      <Text style={[styles.deleteActionText, { fontFamily: fonts.bold }]}>Obriši</Text>
                     </TouchableOpacity>
                   )}
                 >
@@ -244,21 +241,21 @@ export default function MemoriesListScreen() {
                   >
                     <Image source={{ uri: memory.imageUrl }} style={styles.cardImage} />
                     <View style={styles.cardContent}>
-                      <Text style={[styles.cardTitle, { color: colors.text }]}>
+                      <Text style={[styles.cardTitle, { color: colors.text, fontFamily: fonts.bold }]}>
                         {memory.isFavorite ? '❤️ ' : ''}{memory.title}
                       </Text>
-                      <Text style={[styles.cardDate, { color: colors.subtext }]}>
+                      <Text style={[styles.cardDate, { color: colors.subtext, fontFamily: fonts.regular }]}>
                         {new Date(memory.createdAt).toLocaleDateString('hr-HR', {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric',
                         })}
                       </Text>
-                      <Text style={[styles.cardLocation, { color: colors.subtext }]}>
+                      <Text style={[styles.cardLocation, { color: colors.subtext, fontFamily: fonts.regular }]}>
                         📍 {memory.latitude.toFixed(4)}, {memory.longitude.toFixed(4)}
                       </Text>
                       {memory.description ? (
-                        <Text style={[styles.cardDescription, { color: colors.subtext }]} numberOfLines={2}>
+                        <Text style={[styles.cardDescription, { color: colors.subtext, fontFamily: fonts.regular }]} numberOfLines={2}>
                           {memory.description}
                         </Text>
                       ) : null}
@@ -277,12 +274,9 @@ export default function MemoriesListScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    padding: 24,
-    paddingTop: 48,
-  },
-  backButton: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  header: { padding: 24, paddingTop: 48 },
+  backButton: { fontSize: 16, marginBottom: 8 },
+  title: { fontSize: 24, marginBottom: 4 },
   count: { fontSize: 14, marginBottom: 12 },
   searchInput: {
     padding: 12,
@@ -299,11 +293,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
   },
-  filterText: { fontSize: 14, fontWeight: 'bold' },
+  filterText: { fontSize: 14 },
   list: { padding: 16 },
   groupLabel: {
     fontSize: 16,
-    fontWeight: 'bold',
     marginBottom: 12,
     marginTop: 8,
     textTransform: 'capitalize',
@@ -319,7 +312,7 @@ const styles = StyleSheet.create({
   },
   cardImage: { width: 100, height: 100 },
   cardContent: { flex: 1, padding: 12 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  cardTitle: { fontSize: 16, marginBottom: 4 },
   cardDate: { fontSize: 12, marginBottom: 2 },
   cardLocation: { fontSize: 12, marginBottom: 4 },
   cardDescription: { fontSize: 12 },
@@ -331,5 +324,5 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 12,
   },
-  deleteActionText: { color: '#fff', fontWeight: 'bold', fontSize: 12 },
+  deleteActionText: { color: '#fff', fontSize: 12 },
 });

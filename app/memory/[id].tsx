@@ -18,7 +18,7 @@ import { doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../lib/ThemeContext';
-import { hapticSuccess, hapticLight, hapticWarning } from '../../lib/haptics';
+import { hapticSuccess, hapticWarning } from '../../lib/haptics';
 
 const { width, height } = Dimensions.get('window');
 
@@ -40,7 +40,7 @@ export default function MemoryScreen() {
   const [memory, setMemory] = useState<Memory | null>(null);
   const [loading, setLoading] = useState(true);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -85,7 +85,6 @@ export default function MemoryScreen() {
             await hapticWarning();
             await deleteDoc(doc(db, 'memories', id));
             router.back();
-            
           } catch (error: any) {
             Alert.alert('Greška', error.message);
           }
@@ -105,7 +104,7 @@ export default function MemoryScreen() {
   if (!memory) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.text }]}>Uspomena nije pronađena</Text>
+        <Text style={[styles.errorText, { color: colors.text, fontFamily: fonts.regular }]}>Uspomena nije pronađena</Text>
       </View>
     );
   }
@@ -127,7 +126,7 @@ export default function MemoryScreen() {
             <TouchableOpacity onPress={() => setFullscreenImage(item)}>
               <Image source={{ uri: item }} style={styles.image} resizeMode="cover" />
               <View style={styles.zoomHint}>
-                <Text style={styles.zoomHintText}>🔍 Klikni za prikaz</Text>
+                <Text style={[styles.zoomHintText, { fontFamily: fonts.regular }]}>🔍 Klikni za prikaz</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -136,19 +135,15 @@ export default function MemoryScreen() {
         {allImages.length > 1 && (
           <View style={styles.indicator}>
             {allImages.map((_, i) => (
-              <View
-                key={i}
-                style={[styles.dot, { backgroundColor: colors.primary }]}
-              />
+              <View key={i} style={[styles.dot, { backgroundColor: colors.primary }]} />
             ))}
           </View>
         )}
 
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>← Nazad</Text>
+          <Text style={[styles.backButtonText, { fontFamily: fonts.bold }]}>← Nazad</Text>
         </TouchableOpacity>
 
-        {/* Favorite gumb */}
         <TouchableOpacity style={styles.favoriteButton} onPress={toggleFavorite}>
           <Text style={styles.favoriteButtonText}>
             {memory.isFavorite ? '❤️' : '🤍'}
@@ -157,14 +152,14 @@ export default function MemoryScreen() {
 
         <View style={styles.content}>
           <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: colors.text }]}>{memory.title}</Text>
+            <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>{memory.title}</Text>
             {memory.isFavorite && (
-              <Text style={styles.favoriteBadge}>❤️ Favorit</Text>
+              <Text style={[styles.favoriteBadge, { fontFamily: fonts.regular }]}>❤️ Favorit</Text>
             )}
           </View>
 
           <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.infoText, { color: colors.subtext }]}>
+            <Text style={[styles.infoText, { color: colors.subtext, fontFamily: fonts.regular }]}>
               📅 {new Date(memory.createdAt).toLocaleDateString('hr-HR', {
                 day: 'numeric',
                 month: 'long',
@@ -174,14 +169,14 @@ export default function MemoryScreen() {
           </View>
 
           <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.infoText, { color: colors.subtext }]}>
+            <Text style={[styles.infoText, { color: colors.subtext, fontFamily: fonts.regular }]}>
               📍 {memory.latitude.toFixed(4)}, {memory.longitude.toFixed(4)}
             </Text>
           </View>
 
           {allImages.length > 1 && (
             <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.infoText, { color: colors.subtext }]}>
+              <Text style={[styles.infoText, { color: colors.subtext, fontFamily: fonts.regular }]}>
                 🖼️ {allImages.length} slika
               </Text>
             </View>
@@ -189,8 +184,8 @@ export default function MemoryScreen() {
 
           {memory.description ? (
             <View style={[styles.descriptionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.descriptionLabel, { color: colors.primary }]}>Opis</Text>
-              <Text style={[styles.description, { color: colors.text }]}>{memory.description}</Text>
+              <Text style={[styles.descriptionLabel, { color: colors.primary, fontFamily: fonts.bold }]}>Opis</Text>
+              <Text style={[styles.description, { color: colors.text, fontFamily: fonts.regular }]}>{memory.description}</Text>
             </View>
           ) : null}
 
@@ -198,11 +193,11 @@ export default function MemoryScreen() {
             style={[styles.editButton, { backgroundColor: colors.card, borderColor: colors.primary }]}
             onPress={() => router.push(`/memory/edit/${memory.id}`)}
           >
-            <Text style={[styles.editButtonText, { color: colors.primary }]}>✏️ Uredi uspomenu</Text>
+            <Text style={[styles.editButtonText, { color: colors.primary, fontFamily: fonts.bold }]}>✏️ Uredi uspomenu</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={styles.deleteButtonText}>🗑️ Obriši uspomenu</Text>
+            <Text style={[styles.deleteButtonText, { fontFamily: fonts.bold }]}>🗑️ Obriši uspomenu</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -255,11 +250,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 6,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   backButton: {
     position: 'absolute',
     top: 48,
@@ -289,7 +280,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  title: { fontSize: 28, fontWeight: 'bold', flex: 1 },
+  title: { fontSize: 28, flex: 1 },
   favoriteBadge: { fontSize: 14, color: '#ff4444' },
   infoRow: {
     padding: 12,
@@ -305,7 +296,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
-  descriptionLabel: { fontSize: 12, marginBottom: 8, fontWeight: 'bold' },
+  descriptionLabel: { fontSize: 12, marginBottom: 8 },
   description: { fontSize: 16, lineHeight: 24 },
   editButton: {
     padding: 16,
@@ -315,7 +306,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
   },
-  editButtonText: { fontSize: 16, fontWeight: 'bold' },
+  editButtonText: { fontSize: 16 },
   deleteButton: {
     backgroundColor: '#1a1a1a',
     padding: 16,
@@ -325,7 +316,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ff4444',
   },
-  deleteButtonText: { color: '#ff4444', fontSize: 16, fontWeight: 'bold' },
+  deleteButtonText: { color: '#ff4444', fontSize: 16 },
   modalContainer: {
     flex: 1,
     backgroundColor: '#000',

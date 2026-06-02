@@ -18,7 +18,7 @@ import { getLocationName } from '../lib/geocoding';
 export default function ChallengesScreen() {
   const [progress, setProgress] = useState<{ [key: string]: number }>({});
   const [loading, setLoading] = useState(true);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -31,11 +31,9 @@ export default function ChallengesScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      const now = new Date();
       const weekStart = getWeekStart();
       const monthStart = getMonthStart();
 
-      // Dohvati sve uspomene
       const q = query(
         collection(db, 'memories'),
         where('userId', '==', session.user.id)
@@ -43,17 +41,11 @@ export default function ChallengesScreen() {
       const snapshot = await getDocs(q);
       const memories = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
 
-      // Tjedne uspomene
       const weeklyMemories = memories.filter(m => new Date(m.createdAt) >= weekStart);
-      // Mjesečne uspomene
       const monthlyMemories = memories.filter(m => new Date(m.createdAt) >= monthStart);
-
-      // Tjedni favoriti
       const weeklyFavorites = weeklyMemories.filter(m => m.isFavorite === true);
-      // Mjesečni favoriti
       const monthlyFavorites = monthlyMemories.filter(m => m.isFavorite === true);
 
-      // Mjesečne države
       const countryNames = await Promise.all(
         monthlyMemories.map(m => getLocationName(m.latitude, m.longitude))
       );
@@ -85,10 +77,10 @@ export default function ChallengesScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backButton, { color: colors.primary }]}>← Nazad</Text>
+          <Text style={[styles.backButton, { color: colors.primary, fontFamily: fonts.bold }]}>← Nazad</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>🎯 Izazovi</Text>
-        <Text style={[styles.subtitle, { color: colors.subtext }]}>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>🎯 Izazovi</Text>
+        <Text style={[styles.subtitle, { color: colors.subtext, fontFamily: fonts.regular }]}>
           Tjedni i mjesečni izazovi
         </Text>
       </View>
@@ -113,13 +105,13 @@ export default function ChallengesScreen() {
               <View style={styles.challengeHeader}>
                 <Text style={styles.challengeIcon}>{item.icon}</Text>
                 <View style={styles.challengeInfo}>
-                  <Text style={[styles.challengeTitle, { color: colors.text }]}>
+                  <Text style={[styles.challengeTitle, { color: colors.text, fontFamily: fonts.bold }]}>
                     {item.title}
                   </Text>
-                  <Text style={[styles.challengeDescription, { color: colors.subtext }]}>
+                  <Text style={[styles.challengeDescription, { color: colors.subtext, fontFamily: fonts.regular }]}>
                     {item.description}
                   </Text>
-                  <Text style={[styles.challengePeriod, { color: colors.primary }]}>
+                  <Text style={[styles.challengePeriod, { color: colors.primary, fontFamily: fonts.bold }]}>
                     {item.period === 'weekly' ? '📅 Tjedni' : '📆 Mjesečni'}
                   </Text>
                 </View>
@@ -138,7 +130,7 @@ export default function ChallengesScreen() {
                     ]}
                   />
                 </View>
-                <Text style={[styles.progressText, { color: colors.subtext }]}>
+                <Text style={[styles.progressText, { color: colors.subtext, fontFamily: fonts.regular }]}>
                   {current}/{item.target}
                 </Text>
               </View>
@@ -154,8 +146,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { padding: 24, paddingTop: 48 },
-  backButton: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  backButton: { fontSize: 16, marginBottom: 8 },
+  title: { fontSize: 24, marginBottom: 4 },
   subtitle: { fontSize: 14 },
   list: { padding: 16 },
   challengeCard: {
@@ -171,9 +163,9 @@ const styles = StyleSheet.create({
   },
   challengeIcon: { fontSize: 32, marginRight: 12 },
   challengeInfo: { flex: 1 },
-  challengeTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  challengeTitle: { fontSize: 16, marginBottom: 4 },
   challengeDescription: { fontSize: 13, marginBottom: 4 },
-  challengePeriod: { fontSize: 11, fontWeight: 'bold' },
+  challengePeriod: { fontSize: 11 },
   completedBadge: { fontSize: 24 },
   progressContainer: {
     flexDirection: 'row',
@@ -186,9 +178,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
+  progressFill: { height: '100%', borderRadius: 4 },
   progressText: { fontSize: 12, minWidth: 30, textAlign: 'right' },
 });

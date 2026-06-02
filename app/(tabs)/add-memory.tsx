@@ -25,7 +25,7 @@ export default function AddMemoryScreen() {
   const [description, setDescription] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   const pickImage = async () => {
     if (images.length >= 5) {
@@ -114,7 +114,6 @@ export default function AddMemoryScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Nisi prijavljen');
 
-      // Upload svih slika
       const imageUrls = await Promise.all(
         images.map((uri, index) => uploadImage(uri, session.user.id, index))
       );
@@ -125,7 +124,7 @@ export default function AddMemoryScreen() {
         latitude,
         longitude,
         imageUrls,
-        imageUrl: imageUrls[0], // za kompatibilnost sa starim kodom
+        imageUrl: imageUrls[0],
         userId: session.user.id,
         createdAt: new Date().toISOString(),
       });
@@ -148,9 +147,8 @@ export default function AddMemoryScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
     >
-      <Text style={[styles.title, { color: colors.text }]}>Nova uspomena</Text>
+      <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>Nova uspomena</Text>
 
-      {/* Prikaz odabranih slika */}
       {images.length > 0 && (
         <FlatList
           horizontal
@@ -169,7 +167,7 @@ export default function AddMemoryScreen() {
               </TouchableOpacity>
               {index === 0 && (
                 <View style={styles.mainBadge}>
-                  <Text style={styles.mainBadgeText}>Glavna</Text>
+                  <Text style={[styles.mainBadgeText, { fontFamily: fonts.bold }]}>Glavna</Text>
                 </View>
               )}
             </View>
@@ -177,28 +175,27 @@ export default function AddMemoryScreen() {
         />
       )}
 
-      {/* Gumbi za dodavanje slika */}
       <View style={styles.imageButtons}>
         <TouchableOpacity
           style={[styles.imageButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={pickImage}
         >
-          <Text style={[styles.imageButtonText, { color: colors.subtext }]}>📷 Fotografiraj</Text>
+          <Text style={[styles.imageButtonText, { color: colors.subtext, fontFamily: fonts.regular }]}>📷 Fotografiraj</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.imageButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={pickFromGallery}
         >
-          <Text style={[styles.imageButtonText, { color: colors.subtext }]}>🖼️ Galerija</Text>
+          <Text style={[styles.imageButtonText, { color: colors.subtext, fontFamily: fonts.regular }]}>🖼️ Galerija</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={[styles.imageCount, { color: colors.subtext }]}>
+      <Text style={[styles.imageCount, { color: colors.subtext, fontFamily: fonts.regular }]}>
         {images.length}/5 slika
       </Text>
 
       <TextInput
-        style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+        style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
         placeholder="Naslov uspomene"
         placeholderTextColor={colors.subtext}
         value={title}
@@ -206,7 +203,7 @@ export default function AddMemoryScreen() {
       />
 
       <TextInput
-        style={[styles.input, styles.textArea, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+        style={[styles.input, styles.textArea, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
         placeholder="Opis (opcionalno)"
         placeholderTextColor={colors.subtext}
         value={description}
@@ -223,7 +220,7 @@ export default function AddMemoryScreen() {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.saveButtonText}>📍 Spremi uspomenu</Text>
+          <Text style={[styles.saveButtonText, { fontFamily: fonts.bold }]}>📍 Spremi uspomenu</Text>
         )}
       </TouchableOpacity>
     </ScrollView>
@@ -233,7 +230,7 @@ export default function AddMemoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 24 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 24, marginTop: 48 },
+  title: { fontSize: 24, marginBottom: 24, marginTop: 48 },
   imageList: { marginBottom: 12 },
   imageContainer: { position: 'relative', marginRight: 8 },
   image: { width: 120, height: 120, borderRadius: 12 },
@@ -258,7 +255,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
   },
-  mainBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  mainBadgeText: { color: '#fff', fontSize: 10 },
   imageButtons: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   imageButton: {
     flex: 1,
@@ -283,5 +280,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  saveButtonText: { color: '#fff', fontSize: 16 },
 });

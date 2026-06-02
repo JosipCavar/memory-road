@@ -6,6 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firestore';
@@ -19,7 +21,8 @@ import {
   AchievementStats,
 } from '../lib/achievements';
 import { getLocationName } from '../lib/geocoding';
-import { Animated, Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -33,19 +36,19 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
-const { width, height } = Dimensions.get('window');
-
 function ConfettiPiece({ index }: { index: number }) {
   const y = useRef(new Animated.Value(-20)).current;
   const x = useRef(new Animated.Value(Math.random() * width)).current;
   const opacity = useRef(new Animated.Value(1)).current;
-  const colors = ['#4CAF50', '#ff4444', '#2196F3', '#FF9800', '#9C27B0', '#FFEB3B'];
-  const color = colors[index % colors.length];
+  const confettiColors = ['#4CAF50', '#ff4444', '#2196F3', '#FF9800', '#9C27B0', '#FFEB3B'];
+  const color = confettiColors[index % confettiColors.length];
+  const size = 8 + Math.random() * 12;
+  const isSquare = Math.random() > 0.5;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(y, {
-        toValue: height,
+        toValue: 800,
         duration: 2000 + Math.random() * 1000,
         useNativeDriver: true,
       }),
@@ -56,9 +59,6 @@ function ConfettiPiece({ index }: { index: number }) {
       }),
     ]).start();
   }, []);
-
-  const size = 8 + Math.random() * 12;
-const isSquare = Math.random() > 0.5;
 
   return (
     <Animated.View
@@ -79,7 +79,7 @@ export default function AchievementsScreen() {
   const [stats, setStats] = useState<AchievementStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -154,15 +154,14 @@ export default function AchievementsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backButton, { color: colors.primary }]}>← Nazad</Text>
+          <Text style={[styles.backButton, { color: colors.primary, fontFamily: fonts.bold }]}>← Nazad</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>🏆 Dostignuća</Text>
-        <Text style={[styles.count, { color: colors.subtext }]}>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>🏆 Dostignuća</Text>
+        <Text style={[styles.count, { color: colors.subtext, fontFamily: fonts.regular }]}>
           {unlocked.length}/{ACHIEVEMENTS.length} otključano
         </Text>
       </View>
 
-      {/* Progress bar */}
       <View style={[styles.progressContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.progressBar}>
           <View
@@ -175,7 +174,7 @@ export default function AchievementsScreen() {
             ]}
           />
         </View>
-        <Text style={[styles.progressText, { color: colors.subtext }]}>
+        <Text style={[styles.progressText, { color: colors.subtext, fontFamily: fonts.regular }]}>
           {Math.round((unlocked.length / ACHIEVEMENTS.length) * 100)}% završeno
         </Text>
       </View>
@@ -197,10 +196,10 @@ export default function AchievementsScreen() {
             ]}>
               <Text style={styles.achievementIcon}>{item.icon}</Text>
               <View style={styles.achievementContent}>
-                <Text style={[styles.achievementTitle, { color: colors.text }]}>
+                <Text style={[styles.achievementTitle, { color: colors.text, fontFamily: fonts.bold }]}>
                   {item.title}
                 </Text>
-                <Text style={[styles.achievementDescription, { color: colors.subtext }]}>
+                <Text style={[styles.achievementDescription, { color: colors.subtext, fontFamily: fonts.regular }]}>
                   {item.description}
                 </Text>
               </View>
@@ -212,14 +211,13 @@ export default function AchievementsScreen() {
         }}
       />
 
-      {/* Konfeti */}
       {showConfetti && (
-          <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            {[...Array(50)].map((_, i) => (
-              <ConfettiPiece key={i} index={i} />
-            ))}
-          </View>
-        )}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {[...Array(50)].map((_, i) => (
+            <ConfettiPiece key={i} index={i} />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -227,12 +225,9 @@ export default function AchievementsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    padding: 24,
-    paddingTop: 48,
-  },
-  backButton: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  header: { padding: 24, paddingTop: 48 },
+  backButton: { fontSize: 16, marginBottom: 8 },
+  title: { fontSize: 24, marginBottom: 4 },
   count: { fontSize: 14 },
   progressContainer: {
     marginHorizontal: 16,
@@ -248,10 +243,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     overflow: 'hidden',
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
+  progressFill: { height: '100%', borderRadius: 4 },
   progressText: { fontSize: 12, textAlign: 'center' },
   list: { padding: 16 },
   achievementCard: {
@@ -264,7 +256,7 @@ const styles = StyleSheet.create({
   },
   achievementIcon: { fontSize: 32, marginRight: 12 },
   achievementContent: { flex: 1 },
-  achievementTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  achievementTitle: { fontSize: 16, marginBottom: 4 },
   achievementDescription: { fontSize: 13 },
   achievementCheck: { fontSize: 20 },
 });

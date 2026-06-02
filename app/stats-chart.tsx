@@ -25,7 +25,7 @@ interface Memory {
 export default function StatsChartScreen() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { colors, isDark } = useTheme();
+  const { colors, fonts } = useTheme();
 
   useEffect(() => {
     loadMemories();
@@ -83,17 +83,17 @@ export default function StatsChartScreen() {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backButton, { color: colors.primary }]}>← Nazad</Text>
+          <Text style={[styles.backButton, { color: colors.primary, fontFamily: fonts.bold }]}>← Nazad</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>📊 Statistike</Text>
-        <Text style={[styles.subtitle, { color: colors.subtext }]}>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>📊 Statistike</Text>
+        <Text style={[styles.subtitle, { color: colors.subtext, fontFamily: fonts.regular }]}>
           Uspomene po mjesecima
         </Text>
       </View>
 
       {chartData.data.length > 0 ? (
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.chartTitle, { color: colors.text }]}>
+          <Text style={[styles.chartTitle, { color: colors.text, fontFamily: fonts.bold }]}>
             Zadnjih {chartData.labels.length} mjeseci
           </Text>
           <BarChart
@@ -121,30 +121,30 @@ export default function StatsChartScreen() {
         </View>
       ) : (
         <View style={styles.empty}>
-          <Text style={[styles.emptyText, { color: colors.subtext }]}>
+          <Text style={[styles.emptyText, { color: colors.subtext, fontFamily: fonts.regular }]}>
             Nemaš još dovoljno uspomena za grafikon
           </Text>
         </View>
       )}
 
       <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.chartTitle, { color: colors.text }]}>📈 Ukupno</Text>
+        <Text style={[styles.chartTitle, { color: colors.text, fontFamily: fonts.bold }]}>📈 Ukupno</Text>
         <View style={styles.statsRow}>
           <View style={styles.stat}>
-            <Text style={[styles.statNumber, { color: colors.primary }]}>{memories.length}</Text>
-            <Text style={[styles.statLabel, { color: colors.subtext }]}>Uspomena</Text>
+            <Text style={[styles.statNumber, { color: colors.primary, fontFamily: fonts.bold }]}>{memories.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.subtext, fontFamily: fonts.regular }]}>Uspomena</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={[styles.statNumber, { color: colors.primary }]}>
+            <Text style={[styles.statNumber, { color: colors.primary, fontFamily: fonts.bold }]}>
               {chartData.labels.length}
             </Text>
-            <Text style={[styles.statLabel, { color: colors.subtext }]}>Aktivnih mjeseci</Text>
+            <Text style={[styles.statLabel, { color: colors.subtext, fontFamily: fonts.regular }]}>Aktivnih mjeseci</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={[styles.statNumber, { color: colors.primary }]}>
+            <Text style={[styles.statNumber, { color: colors.primary, fontFamily: fonts.bold }]}>
               {chartData.data.length > 0 ? Math.max(...chartData.data) : 0}
             </Text>
-            <Text style={[styles.statLabel, { color: colors.subtext }]}>Rekord/mj.</Text>
+            <Text style={[styles.statLabel, { color: colors.subtext, fontFamily: fonts.regular }]}>Rekord/mj.</Text>
           </View>
         </View>
       </View>
@@ -156,8 +156,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { padding: 24, paddingTop: 48 },
-  backButton: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  backButton: { fontSize: 16, marginBottom: 8 },
+  title: { fontSize: 24, marginBottom: 4 },
   subtitle: { fontSize: 14 },
   chartCard: {
     margin: 16,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
   },
-  chartTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
+  chartTitle: { fontSize: 16, marginBottom: 16 },
   statsCard: {
     margin: 16,
     padding: 20,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   stat: { alignItems: 'center' },
-  statNumber: { fontSize: 28, fontWeight: 'bold' },
+  statNumber: { fontSize: 28 },
   statLabel: { fontSize: 12, marginTop: 4, textAlign: 'center' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 48 },
   emptyText: { fontSize: 16 },

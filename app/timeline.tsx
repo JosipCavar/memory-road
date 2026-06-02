@@ -28,7 +28,7 @@ interface Memory {
 export default function TimelineScreen() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   useEffect(() => {
     loadMemories();
@@ -69,10 +69,10 @@ export default function TimelineScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backButton, { color: colors.primary }]}>← Nazad</Text>
+          <Text style={[styles.backButton, { color: colors.primary, fontFamily: fonts.bold }]}>← Nazad</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>🗓️ Timeline</Text>
-        <Text style={[styles.count, { color: colors.subtext }]}>{memories.length} uspomena</Text>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>🗓️ Timeline</Text>
+        <Text style={[styles.count, { color: colors.subtext, fontFamily: fonts.regular }]}>{memories.length} uspomena</Text>
       </View>
 
       <FlatList
@@ -81,12 +81,11 @@ export default function TimelineScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={[styles.emptyText, { color: colors.subtext }]}>Nemaš još uspomena</Text>
+            <Text style={[styles.emptyText, { color: colors.subtext, fontFamily: fonts.regular }]}>Nemaš još uspomena</Text>
           </View>
         }
         renderItem={({ item, index }) => (
           <View style={styles.timelineItem}>
-            {/* Linija i točka */}
             <View style={styles.timelineLeft}>
               <View style={[styles.dot, {
                 backgroundColor: item.isFavorite ? '#ff4444' : colors.primary
@@ -96,17 +95,16 @@ export default function TimelineScreen() {
               )}
             </View>
 
-            {/* Kartica */}
             <TouchableOpacity
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push(`/memory/${item.id}`)}
             >
               <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
               <View style={styles.cardContent}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>
+                <Text style={[styles.cardTitle, { color: colors.text, fontFamily: fonts.bold }]}>
                   {item.isFavorite ? '❤️ ' : ''}{item.title}
                 </Text>
-                <Text style={[styles.cardDate, { color: colors.subtext }]}>
+                <Text style={[styles.cardDate, { color: colors.subtext, fontFamily: fonts.regular }]}>
                   {new Date(item.createdAt).toLocaleDateString('hr-HR', {
                     day: 'numeric',
                     month: 'long',
@@ -114,7 +112,7 @@ export default function TimelineScreen() {
                   })}
                 </Text>
                 {item.description ? (
-                  <Text style={[styles.cardDescription, { color: colors.subtext }]} numberOfLines={2}>
+                  <Text style={[styles.cardDescription, { color: colors.subtext, fontFamily: fonts.regular }]} numberOfLines={2}>
                     {item.description}
                   </Text>
                 ) : null}
@@ -130,12 +128,9 @@ export default function TimelineScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    padding: 24,
-    paddingTop: 48,
-  },
-  backButton: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  header: { padding: 24, paddingTop: 48 },
+  backButton: { fontSize: 16, marginBottom: 8 },
+  title: { fontSize: 24, marginBottom: 4 },
   count: { fontSize: 14 },
   list: { padding: 16 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 48 },
@@ -170,7 +165,7 @@ const styles = StyleSheet.create({
   },
   cardImage: { width: '100%', height: 140 },
   cardContent: { padding: 12 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  cardTitle: { fontSize: 16, marginBottom: 4 },
   cardDate: { fontSize: 12, marginBottom: 4 },
   cardDescription: { fontSize: 12 },
 });

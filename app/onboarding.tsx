@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Dimensions,
   FlatList,
-  Animated,
 } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -44,7 +43,7 @@ const SLIDES = [
 export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   const handleNext = () => {
     if (currentIndex < SLIDES.length - 1) {
@@ -63,7 +62,7 @@ export default function OnboardingScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TouchableOpacity style={styles.skipButton} onPress={handleFinish}>
-        <Text style={[styles.skipText, { color: colors.subtext }]}>Preskoči</Text>
+        <Text style={[styles.skipText, { color: colors.subtext, fontFamily: fonts.regular }]}>Preskoči</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -77,13 +76,12 @@ export default function OnboardingScreen() {
         renderItem={({ item }) => (
           <View style={[styles.slide, { width }]}>
             <Text style={styles.slideEmoji}>{item.emoji}</Text>
-            <Text style={[styles.slideTitle, { color: colors.text }]}>{item.title}</Text>
-            <Text style={[styles.slideDescription, { color: colors.subtext }]}>{item.description}</Text>
+            <Text style={[styles.slideTitle, { color: colors.text, fontFamily: fonts.bold }]}>{item.title}</Text>
+            <Text style={[styles.slideDescription, { color: colors.subtext, fontFamily: fonts.regular }]}>{item.description}</Text>
           </View>
         )}
       />
 
-      {/* Indikatori */}
       <View style={styles.indicators}>
         {SLIDES.map((_, i) => (
           <View
@@ -103,7 +101,7 @@ export default function OnboardingScreen() {
         style={[styles.nextButton, { backgroundColor: colors.primary }]}
         onPress={handleNext}
       >
-        <Text style={styles.nextButtonText}>
+        <Text style={[styles.nextButtonText, { fontFamily: fonts.bold }]}>
           {currentIndex === SLIDES.length - 1 ? 'Počni! 🚀' : 'Dalje →'}
         </Text>
       </TouchableOpacity>
@@ -127,7 +125,7 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   slideEmoji: { fontSize: 80, marginBottom: 32 },
-  slideTitle: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
+  slideTitle: { fontSize: 28, textAlign: 'center', marginBottom: 16 },
   slideDescription: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
   indicators: {
     flexDirection: 'row',
@@ -147,5 +145,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
-  nextButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  nextButtonText: { color: '#fff', fontSize: 18 },
 });

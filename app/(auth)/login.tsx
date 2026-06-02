@@ -17,7 +17,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -43,11 +43,15 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-        <Text style={[styles.title, { color: colors.text }]}>🗺️ Memory Road</Text>
-        <Text style={[styles.subtitle, { color: colors.subtext }]}>Prijavi se</Text>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>
+          🗺️ Memory Road
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.subtext, fontFamily: fonts.regular }]}>
+          Prijavi se
+        </Text>
 
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
           placeholder="Email"
           placeholderTextColor={colors.subtext}
           value={email}
@@ -56,7 +60,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
         />
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
           placeholder="Lozinka"
           placeholderTextColor={colors.subtext}
           value={password}
@@ -69,13 +73,13 @@ export default function LoginScreen() {
           onPress={handleLogin}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText, { fontFamily: fonts.bold }]}>
             {loading ? 'Prijava...' : 'Prijavi se'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-          <Text style={[styles.link, { color: colors.primary }]}>
+          <Text style={[styles.link, { color: colors.primary, fontFamily: fonts.regular }]}>
             Nemaš račun? Registriraj se
           </Text>
         </TouchableOpacity>
@@ -87,7 +91,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, justifyContent: 'center', padding: 24 },
-  title: { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  title: { fontSize: 36, textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 18, textAlign: 'center', marginBottom: 32 },
   input: {
     padding: 16,
@@ -103,6 +107,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  buttonText: { color: '#fff', fontSize: 16 },
   link: { textAlign: 'center', fontSize: 14 },
 });

@@ -21,7 +21,6 @@ import QRCode from 'react-native-qrcode-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { getLocationName } from '../../lib/geocoding';
 import { ACHIEVEMENTS, getUnlockedAchievements, AchievementStats } from '../../lib/achievements';
-import MapView, { Marker } from 'react-native-maps';
 
 interface UserProfile {
   username: string;
@@ -52,7 +51,7 @@ export default function ProfileScreen() {
   const [achievementStats, setAchievementStats] = useState<AchievementStats | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const { isDark, toggleTheme, colors } = useTheme();
+  const { isDark, toggleTheme, colors, fonts } = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -200,7 +199,7 @@ export default function ProfileScreen() {
         style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
       >
-        <Text style={[styles.title, { color: colors.text }]}>Profil</Text>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>Profil</Text>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TouchableOpacity onPress={handleChangeAvatar} disabled={uploadingAvatar}>
@@ -222,7 +221,7 @@ export default function ProfileScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Text style={styles.avatarText}>
+                    <Text style={[styles.avatarText, { fontFamily: fonts.bold }]}>
                       {profile?.username?.charAt(0).toUpperCase() ?? '?'}
                     </Text>
                     <View style={styles.avatarEditBadge}>
@@ -233,55 +232,62 @@ export default function ProfileScreen() {
               </View>
             )}
           </TouchableOpacity>
-          <Text style={[styles.username, { color: colors.text }]}>{profile?.username}</Text>
-          <Text style={[styles.email, { color: colors.subtext }]}>{profile?.email}</Text>
+          <Text style={[styles.username, { color: colors.text, fontFamily: fonts.bold }]}>{profile?.username}</Text>
+          <Text style={[styles.email, { color: colors.subtext, fontFamily: fonts.regular }]}>{profile?.email}</Text>
         </View>
 
-        {/* Statistike */}
         <TouchableOpacity
           style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/memories-list')}
         >
           <View style={styles.statsRow}>
             <View style={styles.stat}>
-              <Text style={[styles.statNumber, { color: colors.primary }]}>{memoriesCount}</Text>
-              <Text style={[styles.statLabel, { color: colors.subtext }]}>Uspomena</Text>
+              <Text style={[styles.statNumber, { color: colors.primary, fontFamily: fonts.bold }]}>{memoriesCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext, fontFamily: fonts.regular }]}>Uspomena</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.stat}>
-              <Text style={[styles.statNumber, { color: colors.primary }]}>{countries.length}</Text>
-              <Text style={[styles.statLabel, { color: colors.subtext }]}>Država</Text>
+              <Text style={[styles.statNumber, { color: colors.primary, fontFamily: fonts.bold }]}>{countries.length}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext, fontFamily: fonts.regular }]}>Država</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.stat}>
-              <Text style={[styles.statNumber, { color: colors.primary }]}>{totalKm}</Text>
-              <Text style={[styles.statLabel, { color: colors.subtext }]}>km</Text>
+              <Text style={[styles.statNumber, { color: colors.primary, fontFamily: fonts.bold }]}>{totalKm}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext, fontFamily: fonts.regular }]}>km</Text>
             </View>
           </View>
-          <Text style={[styles.statsHint, { color: colors.subtext }]}>Pritisni za sve uspomene →</Text>
+          <Text style={[styles.statsHint, { color: colors.subtext, fontFamily: fonts.regular }]}>Pritisni za sve uspomene →</Text>
         </TouchableOpacity>
 
-        {/* Države */}
         {countries.length > 0 && (
           <View style={[styles.countriesCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.countriesTitle, { color: colors.text }]}>🌍 Posjećene države</Text>
+            <Text style={[styles.countriesTitle, { color: colors.text, fontFamily: fonts.bold }]}>🌍 Posjećene države</Text>
             <View style={styles.countriesList}>
               {countries.map((country, index) => (
                 <View key={index} style={[styles.countryBadge, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.countryText, { color: colors.primary }]}>{country}</Text>
+                  <Text style={[styles.countryText, { color: colors.primary, fontFamily: fonts.bold }]}>{country}</Text>
                 </View>
               ))}
             </View>
           </View>
         )}
 
-        {/* Achievements gumb */}
         <TouchableOpacity
           style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/achievements')}
         >
-          <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
+          <Text style={[styles.achievementsButtonText, { color: colors.text, fontFamily: fonts.bold }]}>
             🏆 Dostignuća ({unlockedCount}/{ACHIEVEMENTS.length})
+          </Text>
+          <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/stats-chart')}
+        >
+          <Text style={[styles.achievementsButtonText, { color: colors.text, fontFamily: fonts.bold }]}>
+            📊 Statistike & Grafikon
           </Text>
           <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
         </TouchableOpacity>
@@ -290,7 +296,7 @@ export default function ProfileScreen() {
           style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/challenges')}
         >
-          <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
+          <Text style={[styles.achievementsButtonText, { color: colors.text, fontFamily: fonts.bold }]}>
             🎯 Izazovi
           </Text>
           <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
@@ -300,26 +306,14 @@ export default function ProfileScreen() {
           style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/friends')}
         >
-          <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
+          <Text style={[styles.achievementsButtonText, { color: colors.text, fontFamily: fonts.bold }]}>
             👥 Prijatelji
           </Text>
           <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
         </TouchableOpacity>
 
-        {/* Statistike & Grafikon gumb */}
-        <TouchableOpacity
-          style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => router.push('/stats-chart')}
-        >
-          <Text style={[styles.achievementsButtonText, { color: colors.text }]}>
-            📊 Statistike & Grafikon
-          </Text>
-          <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
-        </TouchableOpacity>
-
-        {/* Dark/Light mode */}
         <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.themeText, { color: colors.text }]}>
+          <Text style={[styles.themeText, { color: colors.text, fontFamily: fonts.bold }]}>
             {isDark ? '🌙 Dark mode' : '☀️ Light mode'}
           </Text>
           <Switch
@@ -334,7 +328,7 @@ export default function ProfileScreen() {
           style={[styles.shareButton, { backgroundColor: colors.card, borderColor: colors.primary }]}
           onPress={() => setShowQR(true)}
         >
-          <Text style={[styles.shareButtonText, { color: colors.primary }]}>
+          <Text style={[styles.shareButtonText, { color: colors.primary, fontFamily: fonts.bold }]}>
             📲 Prikaži QR kod
           </Text>
         </TouchableOpacity>
@@ -343,7 +337,7 @@ export default function ProfileScreen() {
           style={[styles.shareButton, { backgroundColor: colors.card, borderColor: colors.primary }]}
           onPress={handleShare}
         >
-          <Text style={[styles.shareButtonText, { color: colors.primary }]}>
+          <Text style={[styles.shareButtonText, { color: colors.primary, fontFamily: fonts.bold }]}>
             🔗 Dijeli svoju kartu
           </Text>
         </TouchableOpacity>
@@ -352,11 +346,10 @@ export default function ProfileScreen() {
           style={[styles.logoutButton, { backgroundColor: colors.card }]}
           onPress={handleLogout}
         >
-          <Text style={styles.logoutButtonText}>Odjavi se</Text>
+          <Text style={[styles.logoutButtonText, { fontFamily: fonts.bold }]}>Odjavi se</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* QR Modal */}
       <Modal
         visible={showQR}
         transparent
@@ -365,10 +358,10 @@ export default function ProfileScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
+            <Text style={[styles.modalTitle, { color: colors.text, fontFamily: fonts.bold }]}>
               🗺️ Moja Memory Road
             </Text>
-            <Text style={[styles.modalSubtitle, { color: colors.subtext }]}>
+            <Text style={[styles.modalSubtitle, { color: colors.subtext, fontFamily: fonts.regular }]}>
               Skeniraj QR kod za pregled karte
             </Text>
 
@@ -381,7 +374,7 @@ export default function ProfileScreen() {
               />
             </View>
 
-            <Text style={[styles.modalUrl, { color: colors.subtext }]} numberOfLines={1}>
+            <Text style={[styles.modalUrl, { color: colors.subtext, fontFamily: fonts.regular }]} numberOfLines={1}>
               {shareUrl}
             </Text>
 
@@ -389,14 +382,14 @@ export default function ProfileScreen() {
               style={[styles.modalShareButton, { backgroundColor: colors.primary }]}
               onPress={handleShare}
             >
-              <Text style={styles.modalShareButtonText}>🔗 Dijeli link</Text>
+              <Text style={[styles.modalShareButtonText, { fontFamily: fonts.bold }]}>🔗 Dijeli link</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.modalClose}
               onPress={() => setShowQR(false)}
             >
-              <Text style={[styles.modalCloseText, { color: colors.subtext }]}>Zatvori</Text>
+              <Text style={[styles.modalCloseText, { color: colors.subtext, fontFamily: fonts.regular }]}>Zatvori</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -409,7 +402,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 24 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 24, marginTop: 48 },
+  title: { fontSize: 24, marginBottom: 24, marginTop: 48 },
   card: {
     borderRadius: 16,
     padding: 24,
@@ -424,11 +417,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     position: 'relative',
   },
-  avatarImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
+  avatarImage: { width: 80, height: 80, borderRadius: 40 },
   avatarOverlay: {
     position: 'absolute',
     width: 80,
@@ -447,7 +436,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     position: 'relative',
   },
-  avatarText: { fontSize: 32, fontWeight: 'bold', color: '#fff' },
+  avatarText: { fontSize: 32, color: '#fff' },
   avatarEditBadge: {
     position: 'absolute',
     bottom: 0,
@@ -460,7 +449,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarEditText: { fontSize: 12 },
-  username: { fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
+  username: { fontSize: 22, marginBottom: 4 },
   email: { fontSize: 14 },
   statsCard: {
     borderRadius: 16,
@@ -476,7 +465,7 @@ const styles = StyleSheet.create({
   },
   stat: { alignItems: 'center', flex: 1 },
   statDivider: { width: 1, height: 40 },
-  statNumber: { fontSize: 28, fontWeight: 'bold' },
+  statNumber: { fontSize: 28 },
   statLabel: { fontSize: 12, marginTop: 4 },
   statsHint: { fontSize: 12, textAlign: 'center' },
   countriesCard: {
@@ -485,14 +474,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
-  countriesTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  countriesTitle: { fontSize: 16, marginBottom: 12 },
   countriesList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  countryBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  countryText: { fontSize: 14, fontWeight: 'bold' },
+  countryBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  countryText: { fontSize: 14 },
   achievementsButton: {
     padding: 16,
     borderRadius: 12,
@@ -502,7 +487,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
-  achievementsButtonText: { fontSize: 16, fontWeight: 'bold' },
+  achievementsButtonText: { fontSize: 16 },
   achievementsArrow: { fontSize: 16 },
   themeCard: {
     borderRadius: 16,
@@ -513,7 +498,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
-  themeText: { fontSize: 16, fontWeight: 'bold' },
+  themeText: { fontSize: 16 },
   shareButton: {
     padding: 16,
     borderRadius: 12,
@@ -521,7 +506,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
   },
-  shareButtonText: { fontSize: 16, fontWeight: 'bold' },
+  shareButtonText: { fontSize: 16 },
   logoutButton: {
     padding: 16,
     borderRadius: 12,
@@ -529,7 +514,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ff4444',
   },
-  logoutButtonText: { color: '#ff4444', fontSize: 16, fontWeight: 'bold' },
+  logoutButtonText: { color: '#ff4444', fontSize: 16 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -543,13 +528,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
+  modalTitle: { fontSize: 20, marginBottom: 4 },
   modalSubtitle: { fontSize: 14, marginBottom: 24, textAlign: 'center' },
-  qrContainer: {
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
+  qrContainer: { padding: 16, borderRadius: 16, marginBottom: 16 },
   modalUrl: { fontSize: 11, marginBottom: 16, textAlign: 'center' },
   modalShareButton: {
     paddingHorizontal: 24,
@@ -559,7 +540,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  modalShareButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  modalShareButtonText: { color: '#fff', fontSize: 16 },
   modalClose: { padding: 8 },
   modalCloseText: { fontSize: 14 },
 });

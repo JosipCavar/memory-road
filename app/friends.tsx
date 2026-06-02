@@ -12,7 +12,7 @@ import {
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../lib/ThemeContext';
 import { supabase } from '../lib/supabase';
-import { followUser, unfollowUser, isFollowing, getFollowing, searchUsers } from '../lib/friends';
+import { followUser, unfollowUser, getFollowing, searchUsers } from '../lib/friends';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firestore';
 
@@ -31,7 +31,7 @@ export default function FriendsScreen() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -102,20 +102,20 @@ export default function FriendsScreen() {
     return (
       <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>
+          <Text style={[styles.avatarText, { fontFamily: fonts.bold }]}>
             {item.username?.charAt(0).toUpperCase() ?? '?'}
           </Text>
         </View>
         <View style={styles.userInfo}>
-          <Text style={[styles.username, { color: colors.text }]}>{item.username}</Text>
-          <Text style={[styles.email, { color: colors.subtext }]}>{item.email}</Text>
+          <Text style={[styles.username, { color: colors.text, fontFamily: fonts.bold }]}>{item.username}</Text>
+          <Text style={[styles.email, { color: colors.subtext, fontFamily: fonts.regular }]}>{item.email}</Text>
         </View>
         <View style={styles.userActions}>
           <TouchableOpacity
             style={[styles.followButton, { backgroundColor: isFollowingUser ? colors.border : colors.primary }]}
             onPress={() => handleFollow(item.id)}
           >
-            <Text style={[styles.followButtonText, { color: isFollowingUser ? colors.text : '#fff' }]}>
+            <Text style={[styles.followButtonText, { color: isFollowingUser ? colors.text : '#fff', fontFamily: fonts.bold }]}>
               {isFollowingUser ? 'Otprati' : 'Prati'}
             </Text>
           </TouchableOpacity>
@@ -123,7 +123,7 @@ export default function FriendsScreen() {
             style={[styles.viewMapButton, { backgroundColor: colors.card, borderColor: colors.primary }]}
             onPress={() => router.push(`/share/${item.id}`)}
           >
-            <Text style={[styles.viewMapButtonText, { color: colors.primary }]}>🗺️</Text>
+            <Text style={styles.viewMapButtonText}>🗺️</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -142,18 +142,17 @@ export default function FriendsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backButton, { color: colors.primary }]}>← Nazad</Text>
+          <Text style={[styles.backButton, { color: colors.primary, fontFamily: fonts.bold }]}>← Nazad</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>👥 Prijatelji</Text>
-        <Text style={[styles.subtitle, { color: colors.subtext }]}>
+        <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>👥 Prijatelji</Text>
+        <Text style={[styles.subtitle, { color: colors.subtext, fontFamily: fonts.regular }]}>
           Pratiš {following.length} korisnika
         </Text>
       </View>
 
-      {/* Search */}
       <View style={styles.searchContainer}>
         <TextInput
-          style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+          style={[styles.searchInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, fontFamily: fonts.regular }]}
           placeholder="🔍 Pretraži korisnike..."
           placeholderTextColor={colors.subtext}
           value={searchText}
@@ -164,14 +163,17 @@ export default function FriendsScreen() {
           style={[styles.searchButton, { backgroundColor: colors.primary }]}
           onPress={handleSearch}
         >
-          <Text style={styles.searchButtonText}>Traži</Text>
+          <Text style={[styles.searchButtonText, { fontFamily: fonts.bold }]}>Traži</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Search rezultati */}
+      {searching && (
+        <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
+      )}
+
       {searchResults.length > 0 && (
-        <View style={[styles.section, { backgroundColor: colors.background }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Rezultati pretrage</Text>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fonts.bold }]}>Rezultati pretrage</Text>
           <FlatList
             data={searchResults}
             keyExtractor={(item) => item.id}
@@ -181,11 +183,10 @@ export default function FriendsScreen() {
         </View>
       )}
 
-      {/* Lista prijatelja */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Pratim</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: fonts.bold }]}>Pratim</Text>
         {following.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.subtext }]}>
+          <Text style={[styles.emptyText, { color: colors.subtext, fontFamily: fonts.regular }]}>
             Ne pratiš još nikog — pretraži korisnike!
           </Text>
         ) : (
@@ -205,8 +206,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { padding: 24, paddingTop: 48 },
-  backButton: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  backButton: { fontSize: 16, marginBottom: 8 },
+  title: { fontSize: 24, marginBottom: 4 },
   subtitle: { fontSize: 14 },
   searchContainer: {
     flexDirection: 'row',
@@ -227,9 +228,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  searchButtonText: { color: '#fff', fontWeight: 'bold' },
+  searchButtonText: { color: '#fff' },
   section: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+  sectionTitle: { fontSize: 18, marginBottom: 12 },
   emptyText: { fontSize: 14, textAlign: 'center', marginTop: 16 },
   userCard: {
     flexDirection: 'row',
@@ -247,9 +248,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  avatarText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  avatarText: { fontSize: 18, color: '#fff' },
   userInfo: { flex: 1 },
-  username: { fontSize: 16, fontWeight: 'bold' },
+  username: { fontSize: 16 },
   email: { fontSize: 12 },
   userActions: { flexDirection: 'row', gap: 8 },
   followButton: {
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
-  followButtonText: { fontSize: 13, fontWeight: 'bold' },
+  followButtonText: { fontSize: 13 },
   viewMapButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,

@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { View, ActivityIndicator } from 'react-native';
 import { ThemeProvider } from '../lib/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SplashAnimation from '../components/SplashAnimation';
+import { useFonts, Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter';
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
+
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_700Bold,
+  });
 
   useEffect(() => {
     const init = async () => {
@@ -31,7 +39,7 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) {
+  if (!fontsLoaded || loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f0f0f' }}>
         <ActivityIndicator size="large" color="#4CAF50" />
@@ -41,6 +49,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
+      {showSplash && <SplashAnimation onFinish={() => setShowSplash(false)} />}
       <Stack screenOptions={{ headerShown: false }}>
         {!onboardingCompleted ? (
           <Stack.Screen name="onboarding" />
