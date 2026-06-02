@@ -21,6 +21,7 @@ import QRCode from 'react-native-qrcode-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { getLocationName } from '../../lib/geocoding';
 import { ACHIEVEMENTS, getUnlockedAchievements, AchievementStats } from '../../lib/achievements';
+import MapView, { Marker } from 'react-native-maps';
 
 interface UserProfile {
   username: string;
