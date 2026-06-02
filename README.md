@@ -81,9 +81,11 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 
 ### Instalacija
 
+```bash
 git clone https://github.com/JosipCavar/memory-road.git
 cd memory-road
 npm install --legacy-peer-deps
+```
 
 ### Konfiguracija
 
@@ -100,8 +102,9 @@ EXPO_PUBLIC_FIREBASE_APP_ID=tvoj_app_id
 ```
 ### Pokretanje
 
+```bash
 npx expo start
-
+```
 Skeniraj QR kod s Expo Go aplikacijom.
 
 ## 📁 Struktura projekta
