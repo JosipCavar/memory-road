@@ -68,7 +68,6 @@ export default function RootLayout() {
         <Stack.Screen name="stats-chart" />
         <Stack.Screen name="challenges" />
         <Stack.Screen name="friends" />
-        <Stack.Screen name="onboarding" />
       </Stack>
     </ThemeProvider>
   );
