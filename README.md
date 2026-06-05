@@ -4,7 +4,7 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 
 ## 👥 Tim
 
-- Josip Čavar
+- Josip Ćavar
 - Safet Srna
 - Jozo Matej Lasić
 - Ivan Živković
