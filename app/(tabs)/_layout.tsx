@@ -23,6 +23,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="add-memory"
         options={{
@@ -41,6 +42,15 @@ export default function TabsLayout() {
           ),
         }}
 />
+        name="leaderboard"
+        options={{
+          title: 'Leaderboard',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trophy" color={color} size={size} />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="profile"
         options={{
