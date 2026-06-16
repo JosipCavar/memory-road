@@ -39,6 +39,7 @@ interface Memory {
 export default function MemoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [memory, setMemory] = useState<Memory | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const { colors, fonts } = useTheme();
@@ -54,7 +55,17 @@ export default function MemoryScreen() {
       const docRef = doc(db, 'memories', id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        setMemory({ id: docSnap.id, ...docSnap.data() } as Memory);
+        const memoryData = {
+          id: docSnap.id,
+          ...docSnap.data(),
+        } as Memory;
+        setMemory(memoryData);
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user) {
+          setIsOwner(memoryData.userId === session.user.id);
+        }
       }
     } catch (error: any) {
       Alert.alert('Greška', getErrorMessage(error));
@@ -189,19 +200,23 @@ export default function MemoryScreen() {
               <Text style={[styles.description, { color: colors.text, fontFamily: fonts.regular }]}>{memory.description}</Text>
             </View>
           ) : null}
+          {isOwner && (
+            <>
+            <TouchableOpacity
+              style={[styles.editButton, { backgroundColor: colors.card, borderColor: colors.primary }]}
+              onPress={() => router.push(`/memory/edit/${memory.id}`)}
+            >
+              <Text style={[styles.editButtonText, { color: colors.primary, fontFamily: fonts.bold }]}>✏️ Uredi uspomenu</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.editButton, { backgroundColor: colors.card, borderColor: colors.primary }]}
-            onPress={() => router.push(`/memory/edit/${memory.id}`)}
-          >
-            <Text style={[styles.editButtonText, { color: colors.primary, fontFamily: fonts.bold }]}>✏️ Uredi uspomenu</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={[styles.deleteButtonText, { fontFamily: fonts.bold }]}>🗑️ Obriši uspomenu</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+              <Text style={[styles.deleteButtonText, { fontFamily: fonts.bold }]}>🗑️ Obriši uspomenu</Text>
+            </TouchableOpacity>
+              </>
+)}
+          </View>
+          
+        </ScrollView>
 
       <Modal
         visible={!!fullscreenImage}
