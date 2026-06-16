@@ -19,6 +19,7 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 - Shake to random memory 📳
 - Memory of the day 📅
 - Timeline prikaz 🗓️
+- Prijatelji na karti (plavi pinovi) 👥
 
 ### 📸 Uspomene
 - Dodavanje s kamerom ili galerijom (do 5 slika)
@@ -26,10 +27,19 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 - Favoriti ❤️
 - Fullscreen pregled slika
 - Swipe to delete, Pull to refresh
+- Javne/privatne uspomene (switch)
+
+### 🌍 Feed
+- Javni feed uspomena zajednice
+- Lajkanje uspomena
+- Profilna slika na feedu
+- Pull to refresh i auto refresh
 
 ### 🏆 Gamifikacija
 - 12 dostignuća s progress barom i konfeti animacijom
 - Tjedni i mjesečni izazovi
+- Leaderboard — globalni, prijatelji i tjedni ranking
+- Medalje za top 3
 
 ### 👥 Socijalne funkcije
 - Praćenje prijatelja
@@ -40,6 +50,7 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 - Grafikon uspomena po mjesecima
 - Broj posjećenih država
 - Ukupni prijeđeni km
+- Ukupni lajkovi
 
 ### 🎨 Dizajn i UX
 - Dark/Light mode
@@ -48,6 +59,10 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 - Skeleton loading
 - Haptic feedback
 - Onboarding ekran za nove korisnike
+
+### 🔔 Notifikacije
+- Dnevni podsjetnik za uspomenu dana (9:00)
+- Obavijest kad netko lajka tvoju uspomenu
 
 ### 📵 Offline podrška
 - Caching uspomena
@@ -68,6 +83,7 @@ Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na 
 | Expo Blur | Glassmorphism efekt |
 | Expo Haptics | Haptički feedback |
 | Expo Sensors | Shake detekcija |
+| Expo Notifications | Lokalne notifikacije |
 | React Native Chart Kit | Grafikoni |
 
 ## 🚀 Pokretanje projekta
@@ -90,7 +106,8 @@ npm install --legacy-peer-deps
 ### Konfiguracija
 
 Kreiraj .env fajl u root direktoriju:
-```bash
+
+```env
 EXPO_PUBLIC_SUPABASE_URL=tvoj_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=tvoj_supabase_anon_key
 EXPO_PUBLIC_FIREBASE_API_KEY=tvoj_firebase_api_key
@@ -100,15 +117,18 @@ EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tvoj_projekt.firebasestorage.app
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tvoj_sender_id
 EXPO_PUBLIC_FIREBASE_APP_ID=tvoj_app_id
 ```
+
 ### Pokretanje
 
 ```bash
 npx expo start
 ```
+
 Skeniraj QR kod s Expo Go aplikacijom.
 
 ## 📁 Struktura projekta
-```bash
+
+```
 memory-road/
 ├── app/
 │   ├── (auth)/
@@ -117,6 +137,8 @@ memory-road/
 │   ├── (tabs)/
 │   │   ├── map.tsx
 │   │   ├── add-memory.tsx
+│   │   ├── feed.tsx
+│   │   ├── leaderboard.tsx
 │   │   └── profile.tsx
 │   ├── memory/
 │   │   ├── [id].tsx
@@ -142,12 +164,14 @@ memory-road/
 │   ├── useShake.ts
 │   ├── offlineStorage.ts
 │   ├── useNetworkStatus.ts
+│   ├── notifications.ts
 │   └── errorHandler.ts
 ├── components/
 │   ├── SkeletonLoader.tsx
 │   └── SplashAnimation.tsx
 └── assets/
 ```
+
 ## 🗄️ Baza podataka
 
 ### Firestore kolekcije
@@ -160,8 +184,13 @@ memories:
 - imageUrl: string
 - imageUrls: string[]
 - userId: string
+- username: string
+- avatarUrl: string
 - createdAt: string
 - isFavorite: boolean
+- isPublic: boolean
+- likes: number
+- likedBy: string[]
 
 users:
 - username: string
@@ -173,6 +202,15 @@ users:
 following:
 - followerId: string
 - followingId: string
+- createdAt: string
+
+notifications:
+- toUserId: string
+- fromUserId: string
+- type: string
+- memoryId: string
+- memoryTitle: string
+- read: boolean
 - createdAt: string
 
 ### Supabase Storage
