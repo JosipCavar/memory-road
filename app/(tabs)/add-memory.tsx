@@ -10,10 +10,11 @@ import {
   ScrollView,
   ActivityIndicator,
   FlatList,
+  Switch,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
@@ -26,6 +27,7 @@ export default function AddMemoryScreen() {
   const [description, setDescription] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const { colors, fonts } = useTheme();
 
   const pickImage = async () => {
@@ -115,6 +117,9 @@ export default function AddMemoryScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Nisi prijavljen');
 
+      const userDoc = await getDoc(doc(db, 'users', session.user.id));
+      const userData = userDoc.data();
+
       const imageUrls = await Promise.all(
         images.map((uri, index) => uploadImage(uri, session.user.id, index))
       );
@@ -127,9 +132,13 @@ export default function AddMemoryScreen() {
         imageUrls,
         imageUrl: imageUrls[0],
         userId: session.user.id,
+        username: userData?.username || 'Nepoznati korisnik',
         createdAt: new Date().toISOString(),
+        isPublic,
+        likes: 0,
+        likedBy: [],
       });
-
+      
       Alert.alert('Uspjeh!', 'Uspomena je spremljena!');
       await hapticSuccess();
       setTitle('');
@@ -212,7 +221,29 @@ export default function AddMemoryScreen() {
         multiline
         numberOfLines={4}
       />
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <Text
+          style={{
+            color: colors.text,
+            fontFamily: fonts.regular,
+            fontSize: 16,
+          }}
+        >
+          Podijeli javno
+        </Text>
 
+        <Switch
+          value={isPublic}
+          onValueChange={setIsPublic}
+        />
+      </View>
       <TouchableOpacity
         style={[styles.saveButton, { backgroundColor: colors.primary }]}
         onPress={handleSave}
