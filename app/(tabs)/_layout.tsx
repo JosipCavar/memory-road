@@ -33,6 +33,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="feed"
         options={{
@@ -41,7 +42,9 @@ export default function TabsLayout() {
             <Ionicons name="images" color={color} size={size} />
           ),
         }}
-/>
+      />
+
+      <Tabs.Screen
         name="leaderboard"
         options={{
           title: 'Leaderboard',
