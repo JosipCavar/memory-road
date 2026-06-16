@@ -12,7 +12,6 @@ import {
   getDocs,
   query,
   where,
-  documentId,
 } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
@@ -27,12 +26,18 @@ interface LeaderboardEntry {
 
 type TabType = 'global' | 'friends' | 'weekly';
 
+const TAB_LABELS = {
+  global: '🌍 Globalno',
+  friends: '👥 Prijatelji',
+  weekly: '📅 Tjedni',
+};
+
 export default function LeaderboardScreen() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [tab, setTab] = useState<TabType>('global');
-
   const { colors, fonts } = useTheme();
 
   useFocusEffect(
@@ -46,13 +51,9 @@ export default function LeaderboardScreen() {
     setEntries([]);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
+      const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id ?? null;
       setCurrentUserId(userId);
-
       if (!userId) return;
 
       if (tab === 'global') await loadGlobal();
@@ -65,13 +66,17 @@ export default function LeaderboardScreen() {
     }
   };
 
-  // 🔥 GLOBAL (računa iz memories kolekcije - TAČNO)
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
   const loadGlobal = async () => {
     const usersSnap = await getDocs(collection(db, 'users'));
     const memoriesSnap = await getDocs(collection(db, 'memories'));
 
     const counts: Record<string, number> = {};
-
     memoriesSnap.docs.forEach((doc) => {
       const userId = doc.data().userId;
       counts[userId] = (counts[userId] || 0) + 1;
@@ -87,15 +92,12 @@ export default function LeaderboardScreen() {
     setEntries(data);
   };
 
-  // 👥 FRIENDS (FIX: uključuje tebe + tačan count)
   const loadFriends = async (userId: string) => {
     const followSnap = await getDocs(
       query(collection(db, 'following'), where('followerId', '==', userId))
     );
 
     const friendIds = followSnap.docs.map((d) => d.data().followingId);
-
-    // 🔥 UBACI SEBE U LISTU
     const allIds = [...friendIds, userId];
 
     if (allIds.length === 0) {
@@ -104,9 +106,7 @@ export default function LeaderboardScreen() {
     }
 
     const memoriesSnap = await getDocs(collection(db, 'memories'));
-
     const counts: Record<string, number> = {};
-
     memoriesSnap.docs.forEach((doc) => {
       const uid = doc.data().userId;
       if (allIds.includes(uid)) {
@@ -115,7 +115,6 @@ export default function LeaderboardScreen() {
     });
 
     const usersSnap = await getDocs(collection(db, 'users'));
-
     const data: LeaderboardEntry[] = usersSnap.docs
       .filter((doc) => allIds.includes(doc.id))
       .map((doc) => ({
@@ -128,7 +127,6 @@ export default function LeaderboardScreen() {
     setEntries(data);
   };
 
-  // 📅 WEEKLY (iz createdAt)
   const loadWeekly = async () => {
     const usersSnap = await getDocs(collection(db, 'users'));
     const memoriesSnap = await getDocs(collection(db, 'memories'));
@@ -138,11 +136,9 @@ export default function LeaderboardScreen() {
     startOfWeek.setDate(now.getDate() - 7);
 
     const counts: Record<string, number> = {};
-
     memoriesSnap.docs.forEach((doc) => {
       const data = doc.data();
       const date = new Date(data.createdAt);
-
       if (date >= startOfWeek) {
         const uid = data.userId;
         counts[uid] = (counts[uid] || 0) + 1;
@@ -166,45 +162,49 @@ export default function LeaderboardScreen() {
     return null;
   };
 
-  const myRank =
-    currentUserId
-      ? entries.findIndex((e) => e.id === currentUserId) + 1
-      : -1;
+  const myRank = currentUserId
+    ? entries.findIndex((e) => e.id === currentUserId) + 1
+    : -1;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* HEADER */}
-      <View style={styles.header}>
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.text, fontFamily: fonts.bold }]}>
           🏆 Leaderboard
         </Text>
-
-        {tab === 'friends' && currentUserId && (
-          <Text style={{ textAlign: 'center', color: colors.subtext }}>
-            Tvoj rank: {myRank > 0 ? myRank : 'Nisi u listi'}
+        {tab === 'friends' && currentUserId && myRank > 0 && (
+          <Text style={[styles.myRank, { color: colors.subtext, fontFamily: fonts.regular }]}>
+            Tvoj rank: #{myRank}
           </Text>
         )}
       </View>
 
-      {/* TABS */}
-      <View style={styles.tabs}>
+      {/* Tabs */}
+      <View style={[styles.tabs, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {(['global', 'friends', 'weekly'] as TabType[]).map((t) => (
           <TouchableOpacity
             key={t}
             onPress={() => setTab(t)}
             style={[
               styles.tab,
-              { backgroundColor: tab === t ? colors.primary : colors.card },
+              { backgroundColor: tab === t ? colors.primary : 'transparent' },
             ]}
           >
-            <Text style={{ color: tab === t ? '#fff' : colors.text }}>
-              {t.toUpperCase()}
+            <Text style={[
+              styles.tabText,
+              {
+                color: tab === t ? '#fff' : colors.subtext,
+                fontFamily: fonts.bold,
+              }
+            ]}>
+              {TAB_LABELS[t]}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* LOADING */}
+      {/* Lista */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -214,37 +214,47 @@ export default function LeaderboardScreen() {
           data={entries}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
           ListEmptyComponent={
-            <Text style={{ textAlign: 'center', color: colors.subtext }}>
-              Nema podataka
-            </Text>
+            <View style={styles.center}>
+              <Text style={{ color: colors.subtext, fontFamily: fonts.regular, fontSize: 16 }}>
+                Nema podataka
+              </Text>
+            </View>
           }
           renderItem={({ item, index }) => {
             const isMe = item.id === currentUserId;
             const medal = getMedal(index);
 
             return (
-              <View
-                style={[
-                  styles.row,
-                  {
-                    backgroundColor: isMe
-                      ? colors.primary + '22'
-                      : colors.card,
-                  },
-                ]}
-              >
-                <Text style={styles.rank}>
-                  {medal ? medal : index + 1}
+              <View style={[
+                styles.row,
+                {
+                  backgroundColor: isMe ? colors.primary + '22' : colors.card,
+                  borderColor: isMe ? colors.primary : colors.border,
+                  borderWidth: 1,
+                }
+              ]}>
+                <View style={styles.rankContainer}>
+                  {medal ? (
+                    <Text style={styles.medal}>{medal}</Text>
+                  ) : (
+                    <Text style={[styles.rankNumber, { color: colors.subtext, fontFamily: fonts.bold }]}>
+                      {index + 1}
+                    </Text>
+                  )}
+                </View>
+
+                <Text style={[styles.username, { color: colors.text, fontFamily: fonts.bold }]}>
+                  {item.username} {isMe ? '👤' : ''}
                 </Text>
 
-                <Text style={{ flex: 1, color: colors.text }}>
-                  {item.username} {isMe ? '(Ti)' : ''}
-                </Text>
-
-                <Text style={{ color: colors.primary }}>
-                  {item.memoriesCount}
-                </Text>
+                <View style={[styles.badge, { backgroundColor: colors.primary + '22' }]}>
+                  <Text style={[styles.badgeText, { color: colors.primary, fontFamily: fonts.bold }]}>
+                    {item.memoriesCount} 📸
+                  </Text>
+                </View>
               </View>
             );
           }}
@@ -256,47 +266,52 @@ export default function LeaderboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
   header: {
     paddingTop: 50,
-    padding: 16,
+    padding: 24,
+    borderBottomWidth: 1,
   },
-
-  title: {
-    fontSize: 22,
-  },
-
+  title: { fontSize: 28, marginBottom: 4 },
+  myRank: { fontSize: 14 },
   tabs: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10,
+    margin: 16,
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
   },
-
   tab: {
+    flex: 1,
     paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    borderRadius: 10,
+    alignItems: 'center',
   },
-
+  tabText: { fontSize: 12 },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 48,
   },
-
-  list: {
-    padding: 16,
-  },
-
+  list: { padding: 16 },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 12,
+    alignItems: 'center',
+    padding: 16,
     marginBottom: 8,
-    borderRadius: 10,
+    borderRadius: 12,
   },
-
-  rank: {
+  rankContainer: {
     width: 40,
+    alignItems: 'center',
   },
+  medal: { fontSize: 24 },
+  rankNumber: { fontSize: 18 },
+  username: { flex: 1, fontSize: 16 },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  badgeText: { fontSize: 14 },
 });

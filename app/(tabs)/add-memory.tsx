@@ -133,12 +133,13 @@ export default function AddMemoryScreen() {
         imageUrl: imageUrls[0],
         userId: session.user.id,
         username: userData?.username || 'Nepoznati korisnik',
+        avatarUrl: userData?.avatarUrl || null,
         createdAt: new Date().toISOString(),
         isPublic,
         likes: 0,
         likedBy: [],
       });
-      
+
       Alert.alert('Uspjeh!', 'Uspomena je spremljena!');
       await hapticSuccess();
       setTitle('');
@@ -221,29 +222,24 @@ export default function AddMemoryScreen() {
         multiline
         numberOfLines={4}
       />
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
-        }}
-      >
-        <Text
-          style={{
-            color: colors.text,
-            fontFamily: fonts.regular,
-            fontSize: 16,
-          }}
-        >
+
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+      }}>
+        <Text style={{ color: colors.text, fontFamily: fonts.regular, fontSize: 16 }}>
           Podijeli javno
         </Text>
-
         <Switch
           value={isPublic}
           onValueChange={setIsPublic}
+          trackColor={{ false: '#ddd', true: '#4CAF50' }}
+          thumbColor='#fff'
         />
       </View>
+
       <TouchableOpacity
         style={[styles.saveButton, { backgroundColor: colors.primary }]}
         onPress={handleSave}

@@ -14,6 +14,7 @@ import {
   getDocs,
   orderBy,
   doc,
+  getDoc,
   updateDoc,
   arrayUnion,
   arrayRemove,
@@ -27,10 +28,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface Memory {
   id: string;
+  userId: string;
   title: string;
   description: string;
   imageUrl: string;
   username: string;
+  avatarUrl?: string;
   createdAt: string;
   likes: number;
   likedBy: string[];
@@ -65,10 +68,29 @@ export default function FeedScreen() {
       );
 
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
+      const memoriesData = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
       })) as Memory[];
+
+      // Dohvati avatarUrl za svakog korisnika
+      const userIds = [...new Set(memoriesData.map(m => m.userId))];
+      const userAvatars: Record<string, string> = {};
+
+      await Promise.all(
+        userIds.map(async (uid) => {
+          const userDoc = await getDoc(doc(db, 'users', uid));
+          if (userDoc.exists()) {
+            userAvatars[uid] = userDoc.data().avatarUrl || '';
+          }
+        })
+      );
+
+      // Dodaj avatarUrl na svaku uspomenu
+      const data = memoriesData.map(m => ({
+        ...m,
+        avatarUrl: userAvatars[m.userId] || undefined,
+      }));
 
       setMemories(data);
     } catch (error) {
@@ -105,7 +127,6 @@ export default function FeedScreen() {
         });
       }
 
-      // Ažuriraj lokalno
       setMemories(prev => prev.map(m => {
         if (m.id !== memory.id) return m;
         const liked = m.likedBy?.includes(userId);
@@ -165,6 +186,7 @@ export default function FeedScreen() {
         keyExtractor={(item) => item.id}
         refreshing={refreshing}
         onRefresh={handleRefresh}
+        contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 48 }}>
             <Text style={{ color: colors.subtext, fontSize: 16, fontFamily: fonts.regular }}>
@@ -172,58 +194,141 @@ export default function FeedScreen() {
             </Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={{
-            backgroundColor: colors.card,
-            margin: 12,
-            borderRadius: 16,
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}>
-            <View style={{ padding: 12 }}>
-              <Text style={{ color: colors.text, fontSize: 16, fontFamily: fonts.bold }}>
-                {item.username}
-              </Text>
-              <Text style={{ color: colors.subtext, fontSize: 12, marginTop: 2, fontFamily: fonts.regular }}>
-                {new Date(item.createdAt).toLocaleDateString('hr-HR')}
-              </Text>
-            </View>
+        renderItem={({ item }) => {
+          const hasLiked = item.likedBy?.includes(userId);
+          return (
+            <View style={{
+              backgroundColor: colors.card,
+              marginHorizontal: 16,
+              marginTop: 16,
+              borderRadius: 16,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}>
+              {/* User info */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: 12,
+                gap: 10,
+              }}>
+                {/* Avatar */}
+                {item.avatarUrl ? (
+                  <Image
+                    source={{ uri: item.avatarUrl }}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                    }}
+                  />
+                ) : (
+                  <View style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: colors.primary,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                    <Text style={{
+                      color: '#fff',
+                      fontFamily: fonts.bold,
+                      fontSize: 16,
+                    }}>
+                      {item.username?.charAt(0).toUpperCase() ?? '?'}
+                    </Text>
+                  </View>
+                )}
 
-            <TouchableOpacity onPress={() => router.push(`/memory/${item.id}`)}>
-              <Image
-                source={{ uri: item.imageUrl }}
-                style={{ width: '100%', height: 250 }}
-              />
-            </TouchableOpacity>
+                <View>
+                  <Text style={{
+                    color: colors.text,
+                    fontSize: 15,
+                    fontFamily: fonts.bold,
+                  }}>
+                    {item.username}
+                  </Text>
+                  <Text style={{
+                    color: colors.subtext,
+                    fontSize: 12,
+                    fontFamily: fonts.regular,
+                  }}>
+                    {new Date(item.createdAt).toLocaleDateString('hr-HR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                </View>
+              </View>
 
-            <View style={{ padding: 12 }}>
-              <Text style={{ color: colors.text, fontSize: 18, marginBottom: 4, fontFamily: fonts.bold }}>
-                {item.title}
-              </Text>
-              {item.description ? (
-                <Text style={{ color: colors.subtext, marginBottom: 12, fontFamily: fonts.regular }}>
-                  {item.description}
-                </Text>
-              ) : null}
-
-              <TouchableOpacity
-                onPress={() => handleLike(item)}
-                disabled={liking === item.id}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-              >
-                <Ionicons
-                  name={item.likedBy?.includes(userId) ? 'thumbs-up' : 'thumbs-up-outline'}
-                  size={22}
-                  color={item.likedBy?.includes(userId) ? colors.primary : colors.subtext}
+              {/* Slika */}
+              <TouchableOpacity onPress={() => router.push(`/memory/${item.id}`)}>
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={{ width: '100%', height: 280 }}
+                  resizeMode="cover"
                 />
-                <Text style={{ color: colors.text, fontSize: 16, fontFamily: fonts.regular }}>
-                  {item.likes ?? 0}
-                </Text>
               </TouchableOpacity>
+
+              {/* Sadržaj */}
+              <View style={{ padding: 12 }}>
+                <Text style={{
+                  color: colors.text,
+                  fontSize: 17,
+                  fontFamily: fonts.bold,
+                  marginBottom: 4,
+                }}>
+                  {item.title}
+                </Text>
+
+                {item.description ? (
+                  <Text style={{
+                    color: colors.subtext,
+                    fontFamily: fonts.regular,
+                    marginBottom: 12,
+                    lineHeight: 20,
+                  }}>
+                    {item.description}
+                  </Text>
+                ) : null}
+
+                {/* Separator */}
+                <View style={{
+                  height: 1,
+                  backgroundColor: colors.border,
+                  marginBottom: 12,
+                }} />
+
+                {/* Lajk gumb */}
+                <TouchableOpacity
+                  onPress={() => handleLike(item)}
+                  disabled={liking === item.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <Ionicons
+                    name={hasLiked ? 'thumbs-up' : 'thumbs-up-outline'}
+                    size={22}
+                    color={hasLiked ? colors.primary : colors.subtext}
+                  />
+                  <Text style={{
+                    color: hasLiked ? colors.primary : colors.subtext,
+                    fontSize: 15,
+                    fontFamily: fonts.bold,
+                  }}>
+                    {item.likes ?? 0} {item.likes === 1 ? 'lajk' : 'lajkova'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
+          );
+        }}
       />
     </View>
   );
