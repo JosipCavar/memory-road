@@ -322,7 +322,7 @@ export default function FeedScreen() {
                     fontSize: 15,
                     fontFamily: fonts.bold,
                   }}>
-                    {item.likes ?? 0} {item.likes === 1 ? 'lajk' : 'lajkova'}
+                    {item.likes ?? 0} {item.likes === 1 ? 'like' : 'likes'}
                   </Text>
                 </TouchableOpacity>
               </View>
