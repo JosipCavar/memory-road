@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, Image, Animated } from 'react-native';
 import MapView, { Marker, Heatmap } from 'react-native-maps';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
@@ -11,6 +11,7 @@ import { useNetworkStatus } from '../../lib/useNetworkStatus';
 import { hapticLight, hapticMedium } from '../../lib/haptics';
 import { BlurView } from 'expo-blur';
 import { useShake } from '../../lib/useShake';
+import { getFollowing } from '../../lib/friends';
 
 interface Memory {
   id: string;
@@ -72,6 +73,8 @@ export default function MapScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quickActionsGroup, setQuickActionsGroup] = useState<MemoryGroup | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showFriendsMemories, setShowFriendsMemories] = useState(false);
+  const [friendsMemories, setFriendsMemories] = useState<Memory[]>([]);
   const [region, setRegion] = useState({
     latitude: 44.0,
     longitude: 17.5,
@@ -122,6 +125,28 @@ export default function MapScreen() {
   const showQuickActions = (group: MemoryGroup) => {
     hapticMedium();
     setQuickActionsGroup(group);
+  };
+
+  const loadFriendsMemories = async () => {
+    if (!userId) return;
+    try {
+      const friendIds = await getFollowing(userId);
+      if (friendIds.length === 0) return;
+
+      const q = query(
+        collection(db, 'memories'),
+        where('userId', 'in', friendIds),
+        where('isPublic', '==', true)
+      );
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Memory[];
+      setFriendsMemories(data);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   useEffect(() => {
@@ -225,6 +250,16 @@ export default function MapScreen() {
             }}
           />
         )}
+
+        {showFriendsMemories && friendsMemories.map((memory, index) => (
+          <Marker
+            key={`friend-${index}`}
+            coordinate={{ latitude: memory.latitude, longitude: memory.longitude }}
+            onPress={() => showPopup({ latitude: memory.latitude, longitude: memory.longitude, memories: [memory] })}
+            pinColor="#2196F3"
+            tracksViewChanges={false}
+          />
+        ))}
       </MapView>
 
       {/* Memory of the day gumb */}
@@ -252,6 +287,18 @@ export default function MapScreen() {
         }}
       >
         <Text style={styles.heatmapButtonText}>🔥</Text>
+      </TouchableOpacity>
+
+      {/* Prijatelji gumb */}
+      <TouchableOpacity
+        style={[styles.friendsButton, { backgroundColor: showFriendsMemories ? colors.primary : 'rgba(0,0,0,0.6)' }]}
+        onPress={() => {
+          hapticLight();
+          if (!showFriendsMemories) loadFriendsMemories();
+          setShowFriendsMemories(!showFriendsMemories);
+        }}
+      >
+        <Text style={styles.friendsButtonText}>👥</Text>
       </TouchableOpacity>
 
       {/* Floating Action Button */}
@@ -437,6 +484,18 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   heatmapButtonText: { fontSize: 22 },
+  friendsButton: {
+    position: 'absolute',
+    top: 152,
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  friendsButtonText: { fontSize: 22 },
   fab: {
     position: 'absolute',
     bottom: 32,

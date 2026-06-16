@@ -19,6 +19,7 @@ import {
   arrayUnion,
   arrayRemove,
   increment,
+  addDoc,
 } from 'firebase/firestore';
 import { db } from '../../lib/firestore';
 import { supabase } from '../../lib/supabase';
@@ -125,8 +126,22 @@ export default function FeedScreen() {
           likedBy: arrayUnion(userId),
           likes: increment(1),
         });
+
+        // Kreiraj notifikaciju samo ako nije tvoja uspomena
+        if (memory.userId !== userId) {
+          await addDoc(collection(db, 'notifications'), {
+            toUserId: memory.userId,
+            fromUserId: userId,
+            type: 'like',
+            memoryId: memory.id,
+            memoryTitle: memory.title,
+            read: false,
+            createdAt: new Date().toISOString(),
+          });
+        }
       }
 
+      // Ažuriraj lokalno
       setMemories(prev => prev.map(m => {
         if (m.id !== memory.id) return m;
         const liked = m.likedBy?.includes(userId);
@@ -217,11 +232,7 @@ export default function FeedScreen() {
                 {item.avatarUrl ? (
                   <Image
                     source={{ uri: item.avatarUrl }}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                    }}
+                    style={{ width: 40, height: 40, borderRadius: 20 }}
                   />
                 ) : (
                   <View style={{
@@ -232,29 +243,17 @@ export default function FeedScreen() {
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}>
-                    <Text style={{
-                      color: '#fff',
-                      fontFamily: fonts.bold,
-                      fontSize: 16,
-                    }}>
+                    <Text style={{ color: '#fff', fontFamily: fonts.bold, fontSize: 16 }}>
                       {item.username?.charAt(0).toUpperCase() ?? '?'}
                     </Text>
                   </View>
                 )}
 
                 <View>
-                  <Text style={{
-                    color: colors.text,
-                    fontSize: 15,
-                    fontFamily: fonts.bold,
-                  }}>
+                  <Text style={{ color: colors.text, fontSize: 15, fontFamily: fonts.bold }}>
                     {item.username}
                   </Text>
-                  <Text style={{
-                    color: colors.subtext,
-                    fontSize: 12,
-                    fontFamily: fonts.regular,
-                  }}>
+                  <Text style={{ color: colors.subtext, fontSize: 12, fontFamily: fonts.regular }}>
                     {new Date(item.createdAt).toLocaleDateString('hr-HR', {
                       day: 'numeric',
                       month: 'long',
@@ -275,42 +274,24 @@ export default function FeedScreen() {
 
               {/* Sadržaj */}
               <View style={{ padding: 12 }}>
-                <Text style={{
-                  color: colors.text,
-                  fontSize: 17,
-                  fontFamily: fonts.bold,
-                  marginBottom: 4,
-                }}>
+                <Text style={{ color: colors.text, fontSize: 17, fontFamily: fonts.bold, marginBottom: 4 }}>
                   {item.title}
                 </Text>
 
                 {item.description ? (
-                  <Text style={{
-                    color: colors.subtext,
-                    fontFamily: fonts.regular,
-                    marginBottom: 12,
-                    lineHeight: 20,
-                  }}>
+                  <Text style={{ color: colors.subtext, fontFamily: fonts.regular, marginBottom: 12, lineHeight: 20 }}>
                     {item.description}
                   </Text>
                 ) : null}
 
                 {/* Separator */}
-                <View style={{
-                  height: 1,
-                  backgroundColor: colors.border,
-                  marginBottom: 12,
-                }} />
+                <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 12 }} />
 
                 {/* Lajk gumb */}
                 <TouchableOpacity
                   onPress={() => handleLike(item)}
                   disabled={liking === item.id}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
                 >
                   <Ionicons
                     name={hasLiked ? 'thumbs-up' : 'thumbs-up-outline'}

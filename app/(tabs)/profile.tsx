@@ -21,7 +21,6 @@ import QRCode from 'react-native-qrcode-svg';
 import * as ImagePicker from 'expo-image-picker';
 import { getLocationName } from '../../lib/geocoding';
 import { ACHIEVEMENTS, getUnlockedAchievements, AchievementStats } from '../../lib/achievements';
-import { getErrorMessage } from '../../lib/errorHandler';
 
 interface UserProfile {
   username: string;
@@ -48,6 +47,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [memoriesCount, setMemoriesCount] = useState(0);
   const [totalKm, setTotalKm] = useState(0);
+  const [totalLikes, setTotalLikes] = useState(0);
   const [countries, setCountries] = useState<string[]>([]);
   const [achievementStats, setAchievementStats] = useState<AchievementStats | null>(null);
   const [showQR, setShowQR] = useState(false);
@@ -96,6 +96,10 @@ export default function ProfileScreen() {
       }
       setTotalKm(Math.round(km));
 
+      // Ukupni lajkovi
+      const totalLikesCount = memoriesData.reduce((sum, m) => sum + (m.likes || 0), 0);
+      setTotalLikes(totalLikesCount);
+
       const countryNames = await Promise.all(
         memoriesData.map(m => getLocationName(m.latitude, m.longitude))
       );
@@ -111,7 +115,7 @@ export default function ProfileScreen() {
       });
 
     } catch (error: any) {
-      Alert.alert('Greška', getErrorMessage(error));
+      Alert.alert('Greška', error.message);
     } finally {
       setLoading(false);
     }
@@ -154,7 +158,7 @@ export default function ProfileScreen() {
       await updateDoc(doc(db, 'users', session.user.id), { avatarUrl });
       setProfile((prev) => prev ? { ...prev, avatarUrl } : prev);
     } catch (error: any) {
-      Alert.alert('Greška', getErrorMessage(error));
+      Alert.alert('Greška', error.message);
     } finally {
       setUploadingAvatar(false);
     }
@@ -237,6 +241,7 @@ export default function ProfileScreen() {
           <Text style={[styles.email, { color: colors.subtext, fontFamily: fonts.regular }]}>{profile?.email}</Text>
         </View>
 
+        {/* Statistike */}
         <TouchableOpacity
           style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/memories-list')}
@@ -256,10 +261,16 @@ export default function ProfileScreen() {
               <Text style={[styles.statNumber, { color: colors.primary, fontFamily: fonts.bold }]}>{totalKm}</Text>
               <Text style={[styles.statLabel, { color: colors.subtext, fontFamily: fonts.regular }]}>km</Text>
             </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.stat}>
+              <Text style={[styles.statNumber, { color: colors.primary, fontFamily: fonts.bold }]}>{totalLikes}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext, fontFamily: fonts.regular }]}>Lajkova</Text>
+            </View>
           </View>
           <Text style={[styles.statsHint, { color: colors.subtext, fontFamily: fonts.regular }]}>Pritisni za sve uspomene →</Text>
         </TouchableOpacity>
 
+        {/* Države */}
         {countries.length > 0 && (
           <View style={[styles.countriesCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.countriesTitle, { color: colors.text, fontFamily: fonts.bold }]}>🌍 Posjećene države</Text>
@@ -273,6 +284,7 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {/* Achievements gumb */}
         <TouchableOpacity
           style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/achievements')}
@@ -283,6 +295,7 @@ export default function ProfileScreen() {
           <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
         </TouchableOpacity>
 
+        {/* Statistike & Grafikon gumb */}
         <TouchableOpacity
           style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/stats-chart')}
@@ -293,6 +306,7 @@ export default function ProfileScreen() {
           <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
         </TouchableOpacity>
 
+        {/* Challenges gumb */}
         <TouchableOpacity
           style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/challenges')}
@@ -303,6 +317,7 @@ export default function ProfileScreen() {
           <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
         </TouchableOpacity>
 
+        {/* Prijatelji gumb */}
         <TouchableOpacity
           style={[styles.achievementsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => router.push('/friends')}
@@ -313,6 +328,7 @@ export default function ProfileScreen() {
           <Text style={[styles.achievementsArrow, { color: colors.subtext }]}>→</Text>
         </TouchableOpacity>
 
+        {/* Dark/Light mode */}
         <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.themeText, { color: colors.text, fontFamily: fonts.bold }]}>
             {isDark ? '🌙 Dark mode' : '☀️ Light mode'}
@@ -351,6 +367,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
 
+      {/* QR Modal */}
       <Modal
         visible={showQR}
         transparent
@@ -466,8 +483,8 @@ const styles = StyleSheet.create({
   },
   stat: { alignItems: 'center', flex: 1 },
   statDivider: { width: 1, height: 40 },
-  statNumber: { fontSize: 28 },
-  statLabel: { fontSize: 12, marginTop: 4 },
+  statNumber: { fontSize: 24 },
+  statLabel: { fontSize: 11, marginTop: 4 },
   statsHint: { fontSize: 12, textAlign: 'center' },
   countriesCard: {
     borderRadius: 16,

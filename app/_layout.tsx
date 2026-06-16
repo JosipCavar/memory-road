@@ -7,6 +7,7 @@ import { ThemeProvider } from '../lib/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SplashAnimation from '../components/SplashAnimation';
 import { useFonts, Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter';
+import { registerForPushNotifications, scheduleMemoryOfTheDayNotification, checkNewLikes } from '../lib/notifications';
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -27,6 +28,20 @@ export default function RootLayout() {
       supabase.auth.getSession().then(({ data: { session } }) => {
         setSession(session);
         setLoading(false);
+      });
+
+      // Registriraj notifikacije
+      registerForPushNotifications().then((status) => {
+        if (status === 'granted') {
+          scheduleMemoryOfTheDayNotification();
+        }
+      });
+
+      // Provjeri nove lajkove
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (session?.user) {
+          await checkNewLikes(session.user.id);
+        }
       });
     };
 
@@ -68,6 +83,7 @@ export default function RootLayout() {
         <Stack.Screen name="stats-chart" />
         <Stack.Screen name="challenges" />
         <Stack.Screen name="friends" />
+        <Stack.Screen name="onboarding" />
       </Stack>
     </ThemeProvider>
   );
