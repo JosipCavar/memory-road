@@ -1,5 +1,6 @@
 # 🗺️ Memory Road
 
+
 Memory Road je mobilna aplikacija za spremanje i dijeljenje osobnih uspomena na interaktivnoj karti. Svaka uspomena je pin na karti — fotografiraj trenutak, dodaj opis i zauvijek zapamti gdje si bio.
 
 ## 👥 Tim
