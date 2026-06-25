@@ -22,7 +22,19 @@
         "backgroundColor": "#0f0f0f"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.memoryroad",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBi1dqKl2REr6ApKXvzwcrcKQ8defAjg94"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,6 +54,12 @@
         }
       ],
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fcf3860d-54d0-4cd7-b6cd-6195d5ab5991"
+      }
+    }
   }
 }

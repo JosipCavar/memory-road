@@ -1,0 +1,51 @@
+{
+  "cli": {
+    "version": ">= 20.3.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://vliforrrsksivztojcur.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsaWZvcnJyc2tzaXZ6dG9qY3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1Mzc5NTQsImV4cCI6MjA5NTExMzk1NH0.ZOXFJrB9ICRFCLkurbAbMj_8B51-WG6IbSsa-mAdARU",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBJchoPUOQ3VpLsDhrTk5Ij5cWdZwbTwRo",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "memory-road-17f48.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "memory-road-17f48",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "memory-road-17f48.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "876917578908",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:876917578908:web:d2a200b5d262dc62dae159"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://vliforrrsksivztojcur.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsaWZvcnJyc2tzaXZ6dG9qY3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1Mzc5NTQsImV4cCI6MjA5NTExMzk1NH0.ZOXFJrB9ICRFCLkurbAbMj_8B51-WG6IbSsa-mAdARU",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBJchoPUOQ3VpLsDhrTk5Ij5cWdZwbTwRo",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "memory-road-17f48.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "memory-road-17f48",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "memory-road-17f48.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "876917578908",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:876917578908:web:d2a200b5d262dc62dae159"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://vliforrrsksivztojcur.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsaWZvcnJyc2tzaXZ6dG9qY3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1Mzc5NTQsImV4cCI6MjA5NTExMzk1NH0.ZOXFJrB9ICRFCLkurbAbMj_8B51-WG6IbSsa-mAdARU",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBJchoPUOQ3VpLsDhrTk5Ij5cWdZwbTwRo",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "memory-road-17f48.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "memory-road-17f48",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "memory-road-17f48.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "876917578908",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:876917578908:web:d2a200b5d262dc62dae159"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
