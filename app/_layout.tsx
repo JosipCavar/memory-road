@@ -12,7 +12,7 @@ import { registerForPushNotifications, scheduleMemoryOfTheDayNotification, check
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [onboardingCompleted, setOnboardingCompleted] = useState(true);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
   const [fontsLoaded] = useFonts({
@@ -23,12 +23,13 @@ export default function RootLayout() {
   useEffect(() => {
     const init = async () => {
       const onboarding = await AsyncStorage.getItem('onboarding_completed');
+      console.log('ONBOARDING VALUE:', onboarding);
       setOnboardingCompleted(!!onboarding);
 
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
-        setLoading(false);
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('SESSION:', session?.user?.id);
+      setSession(session);
+      setLoading(false);
 
       // Registriraj notifikacije
       registerForPushNotifications().then((status) => {
@@ -38,11 +39,9 @@ export default function RootLayout() {
       });
 
       // Provjeri nove lajkove
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
-        if (session?.user) {
-          await checkNewLikes(session.user.id);
-        }
-      });
+      if (session?.user) {
+        await checkNewLikes(session.user.id);
+      }
     };
 
     init();
